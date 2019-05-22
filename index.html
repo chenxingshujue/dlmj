@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<!-- saved from url=(0051)https://www.gznotes.com/manual/DAssist/emulator.php -->
+<html lang="zh-cn" class="">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  	<title>hlm</title>
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+    <link rel="stylesheet" href="./main_files/ljreset.css">
+    <link rel="stylesheet" href="./main_files/manual.css">
+    <style type="text/css">
+      html div[id^="_"] { display:none !important}
+      html iframe[id^="head__"] { display:none !important}
+      html iframe[id^="utp__"] { display:none !important}
+      html iframe[src*="ucweb.com"] {display:none !important}
+    </style>
+    <link type="text/css" rel="stylesheet" href="chrome-extension://ckphchjljlekndhjifdfpmmnlaijimcd/style.css">
+  </head>
+  <body>
+    <div id="detail">
+      <pre id="terminal">
+          <input class="cmdline" value="">
+      </pre>
+    </div>	
+  </body>
+
+<div id="copyright" class="ljtr">Copyright © 2019 - DAssist.All Rights Reserved.<a href="https://www.gznotes.com/">少游科技</a> 版权所有</div>
+<script>
+    var is_admin=0;
+</script>
+<script src="./main_files/jquery.min.js"></script>
+
+<script>
+jQuery(document).ready(function(d){
+	var _input = '<input class="cmdline" value="" />';
+	var terminal = d("#terminal");
+	var wsServer = 'ws://192.168.144.1:8765';
+  var message = {}
+	ws = new WebSocket(wsServer);
+	ws.onopen = function (evt) {
+		console.log('WebSocket Connected.');
+    var cmd = {};
+    cmd.id = 1
+    cmd.username = "chenxing"
+    cmd.secretid = Math.random().toString()
+    ws.send(JSON.stringify(cmd))
+	};
+
+	ws.onclose = function (evt) {
+		console.log("Disconnected");
+	};
+
+	ws.onmessage = function (evt) {
+		console.log(evt.data);
+		if('DA_ERR_TIMEOUT'===evt.data){
+			if(confirm('超时提醒：链接已断开【确认】刷新,【取消】关闭')){
+				window.location.reload();
+			}else{
+				//window.close();
+				window.location.href="https://www.gznotes.com/manual/DAssist/";
+			}
+		}else{
+      message = JSON.parse(evt.data)
+      if (message.id == 1) {
+          greeting = "Welcome to Fight Against Landlords!\n"
+          greeting += " your player id is "+ message.playerid + "\n"
+          terminal.append(greeting);
+      }else{
+          terminal.append(message.data + "\n");
+      }
+      if (message.id != 100){
+  			terminal.scrollTop(terminal[0].scrollHeight);
+        d('.cmdline').remove();
+        terminal.append(_input);
+        d('.cmdline').focus();
+      }else if (d('.cmdline') != null){
+  			d('.cmdline').remove();
+      }
+		}
+	};
+
+	ws.onerror = function (evt, e) {
+	    terminal.append('Error Occured: ' + evt.data);
+		alert('Error Occured 1: ' + evt.data);
+		//window.location.reload();
+	};
+
+	d('body').on('keyup','.cmdline',function(event){
+		//console.log(event);
+		if(13===event.keyCode){
+			var v = this.value;
+			d('.cmdline').remove();
+			if('clear'===v){
+				terminal.html('');
+			}
+      if('quit'===v || 'exit'===v){
+        ws.close()
+      }else{
+          var cmd = {};
+          cmd.id = message.id
+          cmd.data = v
+    			ws.send(JSON.stringify(cmd));
+      }
+		}
+	});
+   d(document).keydown(function (event) {
+      if ((event.ctrlKey && event.which===72)){
+            event.preventDefault();
+            var inp = d('.cmdline');
+            var txt = inp.val();
+            d('.cmdline').val(txt.substring(0,txt.length-1));
+      }
+      if (9 === event.which ){
+         event.preventDefault(); 
+         return false;
+      } 
+   });
+	terminal.click(function(){
+		d('.cmdline').focus();
+	});
+function html_encode(str)  
+{  
+  var s = "";  
+  if (str.length == 0) return "";  
+  s = str.replace(/&/g, "&gt;");  
+  s = s.replace(/</g, "&lt;");  
+  s = s.replace(/>/g, "&gt;");  
+  s = s.replace(/ /g, "&nbsp;");  
+  s = s.replace(/\'/g, "&#39;");  
+  s = s.replace(/\"/g, "&quot;");  
+  //s = s.replace(/\n/g, "<br>");
+  return s;  
+}  
+ 
+function html_decode(str)  
+{  
+  var s = "";  
+  if (0===str.length) return "";  
+  s = str.replace(/&gt;/g, "&");  
+  s = s.replace(/&lt;/g, "<");  
+  s = s.replace(/&gt;/g, ">");  
+  s = s.replace(/&nbsp;/g, " ");  
+  s = s.replace(/&#39;/g, "\'");  
+  s = s.replace(/&quot;/g, "\"");  
+  //s = s.replace(/<br>/g, "\n");
+  return s;  
+}
+});
+</script>
