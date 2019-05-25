@@ -110,7 +110,8 @@ class Rule(object):
 		self.value = 0
 		if parse:
 			self.rule = self.parse_rule_type()
-			self.value = self.cards_key[self.flatcount-1] * self.rule.value
+			if self.rule != None:
+				self.value = self.cards_key[self.flatcount-1] * self.rule.value
 
 	def sort_by_count(self,card):
 		return self.flatcards[card]
@@ -164,10 +165,10 @@ class Rule(object):
 				return pattern.fourfold_with_three
 
 
-	def parse_straight(self):
+	def parse_straight(self,straight_count = 5):
 		straight = False
-		if self.count > 4:
-			if self.flatcount == 1:
+		if self.count >= straight_count:
+			if self.flatcount == self.count:
 				straight = True
 				if STRAIGHT_SPECIALS.get(self.cards[0]):
 					straight = False
@@ -190,8 +191,7 @@ class Rule(object):
 		for c in self.cards_count:
 			if c != 2:
 				return False
-		if not Rule(self.cards_key,False).parse_straight():
+		if not Rule(self.cards_key,False).parse_straight(3):
 			return False
 		return True
-
 

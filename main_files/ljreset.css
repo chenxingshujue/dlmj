@@ -33,7 +33,7 @@ input{border-radius:0}
 .ljfred{color:#f00!important}
 
 html{font-size:62.5%; /* 10÷16=62.5% */}
-body{font-weight:normal;font-size:1.2rem;/* 12÷10=12 */line-height:1.6rem; ;font-family:'Microsoft Yahei',Tahoma,Lato,Verdana,Lucida,Arial,Helvetica,sans-serif}
+body{font-weight:normal;font-size:1.2rem;/* 12÷10=12 line-height:1.6rem; ;font-family:'Microsoft Yahei',Tahoma,Lato,Verdana,Lucida,Arial,Helvetica,sans-serif}*/
 a{text-decoration:none}a:active{opacity:.5}
 p{font-size:1.4rem;text-indent:2em;}
 html,body{width:100%;min-height:100%}

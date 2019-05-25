@@ -3,7 +3,7 @@ import websockets
 import http.server
 import socketserver
 import json
-import roommanager
+import roommanager as rmg
 from things import Player
 from hashlib import md5
 from common import c2s
@@ -17,8 +17,26 @@ from common import messageQueue
 # 	print("serving at port",PORT)
 # 	httpd.serve_forever()
 
+import pymysql
+
+print("server starting...")
+ 
+# 连接database
+mysql_conn = pymysql.connect(
+    host="127.0.0.1",
+    user="root",password="Chenxing11",
+    database = "shaoyou",
+    charset = 'utf8')
+
+print("database connected")
+cursor = mysql_conn.cursor() 
+get_max_id = "select max(id) from players;"
+cursor.execute(get_max_id)
+Player._global_id_ = cursor.fetchone()[0] or 0
+print("max_player_id",Player._global_id_)
+
 clients = {}
-websockets_to_secretid = {}
+websockets_to_id = {}
 cmd_handlers = {}
 
 async def card_server(websocket,path):
@@ -28,11 +46,9 @@ async def card_server(websocket,path):
 			cmd = await websocket.recv()
 			print(f" < {cmd}")
 			cmd = json.loads(cmd)
-			id = cmd.get("id")
-			if  id != None and type(id) == "int" :
-				id = int(cmd.id)
-			if  id > 0 and cmd_handlers[id] != None:
-				cmd_handlers[id](websocket,cmd)
+			protolid = cmd.get("id")
+			if  protolid != None and type(protolid) == int and cmd_handlers[protolid] != None:
+				cmd_handlers[protolid](websocket,cmd)
 		except websockets.exceptions.ConnectionClosed as e :
 			logout(websocket)
 			break
@@ -41,45 +57,122 @@ async def card_server(websocket,path):
 			await messageQueue.get()
 	
 def login(websocket,cmd):
+	username = cmd.get("username")
 	secretid = cmd.get("secretid") or 0
-	websockets_to_secretid[websocket] = secretid
-	if clients.get(secretid) != None:
-		return
-	player = Player()
-	player.nickname = cmd.get("username")
-	player.secretid = cmd.get("secretid")
-	player.online = 1
-	player.websocket = websocket
-	clients[player.secretid ] = player
+	sql = f"select * from players where username ='{username}';"
+	cursor.execute(sql)
+
+	playerid = None;
+
+	ret = 0
+	col = cursor.fetchone()
+	if col != None:
+		playerid,_,secretid,points = col
+		saved_secretid = secretid
+		if saved_secretid != secretid :
+			ret = 2
+		else :
+			ret = 0
+	else:
+		confirm_secretid = cmd.get("confirm_secretid")
+		if confirm_secretid == secretid:
+			ret = 0
+		else:
+			ret = 1
 
 	msg = {}
 	msg["id"] = s2c.login.value
-	msg["ret"] = 0
-	msg["secretid"] = player.secretid
-	msg["playerid"] = player.id
-	msg = json.dumps(msg)
-	print(">",msg)
-	messageQueue.put(websocket.send(msg))
-	player.askquestion(1)
+	msg["ret"] = ret
+	msg["secretid"] = secretid
+	msg["username"] = username
+	if ret == 0:
+		player = None;
+		if playerid != None:
+			player = clients.get(playerid)
+		if player == None:	 #new login
+			player = create_player(secretid,username,playerid)
+			player.websocket = websocket
+			clients[player.id] = player
+			websockets_to_id[websocket] = player.id
+			msg["playerid"] = player.id
+			msg["points"] = player.points
+			msg = json.dumps(msg)
+			print(">",msg)
+			messageQueue.put(websocket.send(msg))
+			player.askquestion(1)
+		else:                #reconnect
+			msg["playerid"] = player.id
+			msg["points"] = player.points
+			msg = json.dumps(msg)
+			print(">",msg)
+			messageQueue.put(websocket.send(msg))
+
+			player.websocket = websocket
+			websockets_to_id[websocket] = player.id
+			room = rmg.get(player.roomid)
+			if room != None:
+				room.on_player_reconnected(player)
+			else:
+				player.askquestion(1)
+
+	else:
+		msg = json.dumps(msg)
+		print(">",msg)
+		messageQueue.put(websocket.send(msg))
+
+
+
+
+def get_playerid_in_db():
+	sql = "select last_insert_id();"
+	cursor.execute(sql)
+	col = cursor.fetchone()
+	print("last_insert_id",col)
+
+def create_player(secretid,username,playerid):
+	points = 1000
+	player = Player(playerid)
+	player.add_points(points)
+	player.secretid = secretid
+	player.username = username
+	player.online = 1
+
+	if playerid == None:
+		sql = f"insert into players values('{player.id}','{username}','{secretid}','{points}');"
+		player.add_points(points)
+		cursor.execute(sql)
+		mysql_conn.commit()
+	return player
+
+
+
 
 def logout(websocket):
-	secretid = websockets_to_secretid.get(websocket)
-	if secretid != None and clients.get(secretid) != None:
-		clients.get(secretid).online = 0
-		del websockets_to_secretid[websocket]
+	playerid = websockets_to_id.get(websocket)
+	del websockets_to_id[websocket]
+	if playerid != None:
+		player = clients.get(playerid)
+		if player != None:
+			player.online = 0
+
+		room = rmg.get(player.roomid)
+		if room != None:
+			room.on_player_disconnect(player)
 
 
 def on_client_answer(websocket,cmd):
-	secretid = websockets_to_secretid.get(websocket)
-	player = clients.get(secretid)
-	if player != None :
-		return player.answerquestion(cmd.get("data"))
+	playerid = websockets_to_id.get(websocket)
+	if playerid != None:
+		player = clients.get(playerid)
+		if player != None :
+			return player.answerquestion(cmd.get("data"))
 
 def on_client_handle(websocket,cmd):
-	secretid = websockets_to_secretid.get(websocket)
-	player = clients.get(secretid)
-	if player != None :
-		return player.handle(cmd.get("data"))
+	playerid = websockets_to_id.get(websocket)
+	if playerid != None:
+		player = clients.get(playerid)
+		if player != None :
+			return player.handle(cmd.get("data"))
 
 
 

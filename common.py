@@ -34,13 +34,11 @@ def on_room_choose(player,questid,answer):
 	if answer == 1 :
 		return player.quick_start()
 	elif answer == 2 :
-		msg = "Please Type the target room Number!"
-		return player.sendmessage(s2c.message,0,msg)
+		return player.askquestion(5)
 	elif answer == 3 :
-		msg = "Please Setup your room password!"
-		return player.sendmessage(s2c.message,0,msg)
+		return player.askquestion(6)
 	msg = "wrong answer,please try again!"
-	return player.sendmessage(s2c.message,1,msg)
+	return player.askquestion_with_msg(msg,questid)
 
 def on_room_waiting(player,questid,answer):
 	answer = toint(answer)
@@ -49,11 +47,12 @@ def on_room_waiting(player,questid,answer):
 		player.askquestion(1)
 	else:
 		msg = "invalid input!"
-		return player.sendmessage(s2c.message,1,msg)
+		player.sendmessage(s2c.message,0,msg)
+		room.check_players(player.id)
 
 def onlandlord_choose(player,questid,answer):
 	answer = toint(answer)
-	room  = rmg.get_or_create_room(player)
+	room  = rmg.get(player.roomid)
 	room.roll_landlord(answer == 1)
 
 def on_game_continue(player,questid,answer):
@@ -63,9 +62,32 @@ def on_game_continue(player,questid,answer):
 		player.askquestion(1)
 	else:
 		player.ready = True
-		room = rmg.get_or_create_room(player)
-		room.start_game()
+		room =rmg.get(player.roomid)
+		if rmg.check_room_conditions(player) :
+			room.start_game()
 
+def on_room_join(player,questid,answer):
+	numbers = toint(answer)
+	if numbers != None :
+		room = rmg.get(numbers)
+
+		if room != None:
+			room.add_player(player)
+		else:
+			msg = "room not exsits,try again!"
+			return player.askquestion_with_msg(msg,questid)
+
+
+
+def on_game_create(player,questid,answer):
+	passwords = toint(answer)
+	room = rmg.create(passwords)
+	room.add_player(player)
+	if not room.isfull():
+		_waiting_rooms[room.id] = room
+		room.check_players()
+	else:
+		room.start_game()
 
 
 answer_handlers = {}
@@ -73,8 +95,22 @@ answer_handlers[1] = on_room_choose
 answer_handlers[2] = on_room_waiting
 answer_handlers[3] = onlandlord_choose
 answer_handlers[4] = on_game_continue
+answer_handlers[5] = on_room_join
+answer_handlers[6] = on_game_create
 
 def answer_question(player,questid,answer):
 	handler = answer_handlers.get(questid)
 	if handler != None:
 		return handler(player,questid,answer)
+
+
+def str2numbers(s):
+	if type(s) != str or s == ' ':
+		return 
+	numbers = []
+	for word in s:
+		try:
+			numbers.append(int(word))
+		except Exception as e:
+			return None
+	return numbers

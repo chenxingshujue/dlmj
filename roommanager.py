@@ -1,5 +1,6 @@
 from things import Room
 from things import Player
+import common
 from hashlib import md5
 _rooms = {}
 _waiting_rooms = {}
@@ -10,6 +11,8 @@ def create():
 	_rooms[room.id] = room
 	return room
 
+def get(roomid):
+	return _rooms.get(roomid)
 
 def get_or_create_room(player):
 	room = None
@@ -29,3 +32,9 @@ def get_or_create_room(player):
 		room.start_game()
 	return room
 
+def check_room_conditions(player):
+	room = rmg.get(player.roomid)
+	if player.points < room.enter_points:
+		player.sendmessage(s2c.message,0,"not enough points!")
+		return False
+	return True
