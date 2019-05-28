@@ -33,7 +33,7 @@ def get_or_create_room(player):
 	return room
 
 def check_room_conditions(player):
-	room = rmg.get(player.roomid)
+	room = get(player.roomid)
 	if player.points < room.enter_points:
 		player.sendmessage(s2c.message,0,"not enough points!")
 		return False

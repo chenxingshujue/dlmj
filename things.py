@@ -71,13 +71,15 @@ class Room(object):
 			msg = "%s leave room %s"%(pl.nickname,self._id)
 			pl.sendmessage(s2c.message,0,msg)
 
+		self.check_players()
+
 	def isfull(self):
 		return len(self._players) >= Room._max_players_count_
 
 	def start_game(self):
 		for _,pl in self._players.items():
 			if pl.ready == False:
-				return
+				return False
 		self.shuffle_cards()
 		for _,pl in self._players.items():
 			pl.add_points(-self.enter_points)
@@ -274,13 +276,12 @@ class Room(object):
 
 
 class Player(object):
-	_global_id_  = 0
 	"""docstring for Player"""
 	def __init__(self,_id):
 		super(Player, self).__init__()
 		if _id == None:
-			Player._global_id_ += 1
-			self._id = Player._global_id_
+			common.max_player_id += 1
+			self._id = common.max_player_id
 		else:
 			self._id = _id
 		self._username = 'player'
@@ -468,4 +469,7 @@ class Player(object):
 		if valid :
 			room.try_discards(self,rule)
 		else:
-			self.showcards("wrong cards,try again!",s2c.handle)		
+			self.showcards("wrong cards,try again!",s2c.handle)	
+
+	def save_to_db():
+		common.save_player_info(player)

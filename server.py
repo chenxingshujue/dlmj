@@ -6,9 +6,7 @@ import json
 import roommanager as rmg
 from things import Player
 from hashlib import md5
-from common import c2s
-from common import s2c
-from common import messageQueue
+from common import *
 # PORT = 80
 
 # Handler = http.server.SimpleHTTPRequestHandler
@@ -17,23 +15,9 @@ from common import messageQueue
 # 	print("serving at port",PORT)
 # 	httpd.serve_forever()
 
-import pymysql
-
 print("server starting...")
  
-# 连接database
-mysql_conn = pymysql.connect(
-    host="127.0.0.1",
-    user="root",password="Chenxing11",
-    database = "shaoyou",
-    charset = 'utf8')
 
-print("database connected")
-cursor = mysql_conn.cursor() 
-get_max_id = "select max(id) from players;"
-cursor.execute(get_max_id)
-Player._global_id_ = cursor.fetchone()[0] or 0
-print("max_player_id",Player._global_id_)
 
 clients = {}
 websockets_to_id = {}
@@ -59,13 +43,11 @@ async def card_server(websocket,path):
 def login(websocket,cmd):
 	username = cmd.get("username")
 	secretid = cmd.get("secretid") or 0
-	sql = f"select * from players where username ='{username}';"
-	cursor.execute(sql)
 
 	playerid = None;
 
 	ret = 0
-	col = cursor.fetchone()
+	col = get_player_info(username)
 	if col != None:
 		playerid,_,secretid,points = col
 		saved_secretid = secretid
@@ -123,11 +105,6 @@ def login(websocket,cmd):
 
 
 
-def get_playerid_in_db():
-	sql = "select last_insert_id();"
-	cursor.execute(sql)
-	col = cursor.fetchone()
-	print("last_insert_id",col)
 
 def create_player(secretid,username,playerid):
 	points = 1000
@@ -138,10 +115,9 @@ def create_player(secretid,username,playerid):
 	player.online = 1
 
 	if playerid == None:
-		sql = f"insert into players values('{player.id}','{username}','{secretid}','{points}');"
 		player.add_points(points)
-		cursor.execute(sql)
-		mysql_conn.commit()
+		create_player_info(player)
+
 	return player
 
 

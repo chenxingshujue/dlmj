@@ -85,7 +85,7 @@ class pattern(Enum):
     triple_with_two = 5
     fourfold_with_single = 6
     fourfold_with_two = 7
-    fourfold_with_three = 8
+    fourfold_with_two_pairs= 8
     straight = 9
     straight_pairs = 10
     plane = 11
@@ -160,9 +160,9 @@ class Rule(object):
 			if self.flatcount == 2:
 				if self.cards_count[0] == 3:
 					return pattern.plane
-		elif self.count == 7:
-			if self.cards_count[self.flatcount - 1] == 4:
-				return pattern.fourfold_with_three
+		elif self.count == 8:
+			if self.cards_count[0] == 2 and self.cards_count[1] == 2 and self.cards_count[2] == 4:
+				return pattern.fourfold_with_two_pairs
 
 
 	def parse_straight(self,straight_count = 5):

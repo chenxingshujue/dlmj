@@ -42,7 +42,7 @@ def on_room_choose(player,questid,answer):
 
 def on_room_waiting(player,questid,answer):
 	answer = toint(answer)
-	if answer == 1:
+	if answer == 0:
 		player.leave_room()
 		player.askquestion(1)
 	else:
@@ -114,3 +114,43 @@ def str2numbers(s):
 		except Exception as e:
 			return None
 	return numbers
+
+
+import pymysql
+
+# 连接database
+mysql_conn = pymysql.connect(
+    host="127.0.0.1",
+    user="root",password="Chenxing11",
+    database = "shaoyou",
+    charset = 'utf8')
+
+print("database connected")
+cursor = mysql_conn.cursor() 
+get_max_id = "select max(id) from players;"
+cursor.execute(get_max_id)
+max_player_id = cursor.fetchone()[0] or 0
+print("max_player_id",max_player_id)
+
+def get_player_info(username):
+	sql = f"select * from players where username ='{username}';"
+	cursor.execute(sql)
+	col = cursor.fetchone()
+	return col
+
+
+def get_playerid_in_db():
+	sql = "select last_insert_id();"
+	cursor.execute(sql)
+	col = cursor.fetchone()
+	print("last_insert_id",col)
+
+def create_player_info(player):
+	sql = f"insert into players values('{player.id}','{player.username}','{player.secretid}','{player.points}');"
+	cursor.execute(sql)
+	mysql_conn.commit()
+
+def save_player_info(player):
+	sql = f"update players set points = '{pl.points}' where id = '{player.id}';"
+	cursor.execute(sql)
+	mysql_conn.commit()

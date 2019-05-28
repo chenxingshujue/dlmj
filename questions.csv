@@ -1,6 +1,6 @@
 index,quest,a0,a1,a2,a3
 1,"quick start(1),join room(2) or create room(3)?",2,1,2,3
-2,waiting for %s more players or exit room(1)?,1,2,3,4
+2,waiting for %s more players or exit room(0)?,1,2,3,4
 3,do you want to be the landlord? yes(1)or no(2),1,1,2,
 4,"%s win !your points is %s,want to continue? yes(1) or no(2)",1,1,2,
 5,Please Type the target room Number!,,,,
