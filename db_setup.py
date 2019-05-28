@@ -5,7 +5,7 @@ import pymysql
 # 连接database
 conn = pymysql.connect(
     host="127.0.0.1",
-    user="root",password="Chenxing11",
+    user="root",password="Chenxing0320!",
     database = 'shaoyou',
     charset = 'utf8')
  
