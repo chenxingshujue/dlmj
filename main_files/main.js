@@ -5,19 +5,26 @@ var wsServer = 'ws://192.168.144.1:8765';
 var message = {}
 message.id = 1
 var ws = null
+var timerId
 function beforeunload() {
   console.log("beforeunload")
   if (ws != null){
     ws.close()
   }
+  clearInterval(timerId)
 }
+function bodyclick(){
+    cmdline.focus();
+};
 function load(){
   console.log("onload")
   terminal = document.getElementById('terminal');
   cmdline = document.getElementById('cmdline');
-  terminal.click(function(){
-    cmdline.focus();
-  });
+  cmdline.focus();
+
+  timerId = setInterval(function() {
+      cmdline.focus();
+  },1000)
 
   ws = new WebSocket(wsServer);
   ws.onopen = function (evt) {
@@ -50,7 +57,7 @@ function load(){
               message.username = null
               message.secretid = null
               message.confirm_secretid = null
-              show_cmdline("<br/>username has been taken or password incorrect!:","text")
+              show_cmdline("<br/>username has been taken or password incorrect!<br/>login username:","text")
           }
       }else{
           show_cmdline(message.data + "<br/>","text")
@@ -74,6 +81,7 @@ function login(){
 }
 function show_cmdline(msg,type){
   if(msg!=null){
+    msg = msg.replace("\n","<br/>")
     terminal.innerHTML = terminal.innerHTML + msg
   }
   cmdline.value = ""

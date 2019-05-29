@@ -62,8 +62,7 @@ def login(websocket,cmd):
 	ret = 0
 	col = get_player_info(username)
 	if col != None:
-		playerid,_,secretid,points = col
-		saved_secretid = secretid
+		playerid,_,saved_secretid,points = col
 		if saved_secretid != secretid :
 			ret = 2
 		else :
@@ -153,7 +152,7 @@ def logout(websocket):
 def on_client_answer(player,data):
 	return player.answerquestion(data)
 
-def on_client_handle(player):
+def on_client_handle(player,data):
 	return player.handle(data)
 
 def on_client_chat(player,data):

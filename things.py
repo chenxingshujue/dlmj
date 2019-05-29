@@ -38,6 +38,7 @@ class Room(object):
 		self.enter_points = 100
 		self.base_points = 50
 		self._status = 0
+		self.passwords = None
 
 	@property
 	def id(self):
@@ -45,6 +46,18 @@ class Room(object):
 	@property
 	def cur_pos(self):
 		return self._cur_pos
+	@property
+	def cur_player(self):
+		return self._players_pos[self._cur_pos]
+	@property
+	def last_discard_player(self):
+		return self._players_pos[self._last_discard_pos]
+	
+
+	@property
+	def last_rule(self):
+		return self._last_rule
+	
 	
 
 	def add_player(self,player):
@@ -74,6 +87,9 @@ class Room(object):
 
 	def isfull(self):
 		return len(self._players) >= Room._max_players_count_
+
+	def isempty(self):
+		return len(self._players) == 0
 
 	def start_game(self):
 		for _,pl in self._players.items():
@@ -190,6 +206,7 @@ class Room(object):
 							if self._last_discard_pos < 0 or self._last_discard_pos == pl.room_pos:
 								player.showcards("your turn to discard",s2c.handle)
 							else:
+								player.show_last_discards()
 								player.showcards("your turn to discard,or pass(0)",s2c.handle)
 						else:
 							player.showcards("waiting for %s to discard ..."%(player.nickname))
@@ -266,12 +283,12 @@ class Room(object):
 				self.endgame(player)
 			else:
 				for _,pl in self._players.items():
-					msg = "%s discard %s"%(player.nickname,cmg.tostr(rule.cards))
-					pl.sendmessage(s2c.message,0,msg)
-
+					pl.show_last_discards()
 				self.roll_discard()
 		else:
 			player.showcards("too small, try again!",s2c.handle)
+
+
 
 	def endgame(self,winner):
 		self._cards = None
@@ -440,6 +457,13 @@ class Player(object):
 			self.sendmessage(s2c.message,0,msg)
 		else:
 			self.sendmessage(e_s2c,0,msg)
+	
+	def show_last_discards(self):
+ 		room = rmg.get(self.roomid)
+ 		if room != None and room.last_rule != None:
+ 			msg = "%s discard %s"%(room.last_discard_player.nickname,cmg.tostr(room.last_rule.cards))
+ 			self.sendmessage(s2c.message,0,msg)
+
 
 	def askquestion_with_msg(self,msg,questid,*params):
 		self._questid = questid
@@ -468,8 +492,7 @@ class Player(object):
 		room = rmg.get_or_create_room(self)
 
 	def leave_room(self):
-		room = rmg.get(self.roomid)
-		room.remove_player(self)
+		rmg.remove_player(self)
 
 	def handle(self,data):
 		data = data.strip()
@@ -491,7 +514,8 @@ class Player(object):
 		rule = None
 		if valid:
 			rule = Rule(discards,True)
-			if rule != None:
+			valid = rule.rule != None
+			if valid:
 				valid = self.validate(rule)
 
 		if valid :

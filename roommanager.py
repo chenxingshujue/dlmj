@@ -11,6 +11,14 @@ def create():
 	_rooms[room.id] = room
 	return room
 
+def create_room(player):
+	room = create()
+	room.add_player(player)
+	if not room.isfull():
+		room.check_players()
+	else:
+		room.start_game()
+
 def get(roomid):
 	return _rooms.get(roomid)
 
@@ -43,4 +51,18 @@ def is_active_player(player):
 	room = get(player.roomid)
 	if room == None:
 		return False
+	print("is_active_player",player.room_pos , room.cur_pos)
 	return player.room_pos == room.cur_pos
+
+def remove_player(player):
+	room = get(player.roomid)
+	if room != None:
+		room.remove_player(player)
+		if room.isempty():
+			del _rooms[room.id]
+			if _waiting_rooms.get(room.id):
+				del _waiting_rooms[room.id] 
+	elif not room.isfull():
+		_waiting_rooms[room.id] = room
+		room.check_players()
+	return room

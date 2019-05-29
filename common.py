@@ -38,7 +38,7 @@ def on_room_choose(player,questid,answer):
 	elif answer == 2 :
 		return player.askquestion(5)
 	elif answer == 3 :
-		return player.askquestion(6)
+		return rmg.create_room(player)
 	msg = "wrong answer,please try again!"
 	return player.askquestion_with_msg(msg,questid)
 
@@ -73,25 +73,19 @@ def on_game_continue(player,questid,answer):
 def on_room_join(player,questid,answer):
 	numbers = toint(answer)
 	if numbers != None :
-		room = rmg.get(numbers)
-
-		if room != None:
-			room.add_player(player)
+		if numbers == "0":
+			player.askquestion(1)
 		else:
-			msg = "room not exsits,try again!"
-			return player.askquestion_with_msg(msg,questid)
+			room = rmg.get(numbers)
+			if room != None:
+				room.add_player(player)
+			else:
+				msg = "room not exsits,try again!"
+				return player.askquestion_with_msg(msg,questid)
 
 
 
-def on_game_create(player,questid,answer):
-	passwords = toint(answer)
-	room = rmg.create(passwords)
-	room.add_player(player)
-	if not room.isfull():
-		_waiting_rooms[room.id] = room
-		room.check_players()
-	else:
-		room.start_game()
+
 
 
 answer_handlers = {}
@@ -100,7 +94,6 @@ answer_handlers[2] = on_room_waiting
 answer_handlers[3] = onlandlord_choose
 answer_handlers[4] = on_game_continue
 answer_handlers[5] = on_room_join
-answer_handlers[6] = on_game_create
 
 def answer_question(player,questid,answer):
 	handler = answer_handlers.get(questid)
