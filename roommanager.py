@@ -38,3 +38,9 @@ def check_room_conditions(player):
 		player.sendmessage(s2c.message,0,"not enough points!")
 		return False
 	return True
+
+def is_active_player(player):
+	room = get(player.roomid)
+	if room == None:
+		return False
+	return player.room_pos == room.cur_pos

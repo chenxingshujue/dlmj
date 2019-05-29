@@ -7,6 +7,7 @@ import roommanager as rmg
 from things import Player
 from hashlib import md5
 from common import *
+import logging
 # PORT = 80
 
 # Handler = http.server.SimpleHTTPRequestHandler
@@ -30,15 +31,27 @@ async def card_server(websocket,path):
 			cmd = await websocket.recv()
 			print(f" < {cmd}")
 			cmd = json.loads(cmd)
-			protolid = cmd.get("id")
-			if  protolid != None and type(protolid) == int and cmd_handlers[protolid] != None:
-				cmd_handlers[protolid](websocket,cmd)
+
+			playerid = websockets_to_id.get(websocket)
+			if playerid != None:
+				player = clients.get(playerid)
+				if player != None :
+					protolid = player.get_protocol_id()
+					if  protolid != None and cmd_handlers[protolid] != None:
+						cmd_handlers[protolid](player,cmd.get("data"))
+			else:
+				login(websocket,cmd)
+
 		except websockets.exceptions.ConnectionClosed as e :
 			logout(websocket)
 			break
-
-		while not messageQueue.empty():
-			await messageQueue.get()
+		except Exception as e:
+			print(e)
+			logging.exception(e)
+			break
+		finally:
+			while not messageQueue.empty():
+				await messageQueue.get()
 	
 def login(websocket,cmd):
 	username = cmd.get("username")
@@ -124,38 +137,38 @@ def create_player(secretid,username,playerid):
 
 
 def logout(websocket):
+	print("logout")
 	playerid = websockets_to_id.get(websocket)
-	del websockets_to_id[websocket]
 	if playerid != None:
+		del websockets_to_id[websocket]
 		player = clients.get(playerid)
 		if player != None:
 			player.online = 0
+			room = rmg.get(player.roomid)
+			if room != None:
+				room.on_player_disconnect(player)
 
-		room = rmg.get(player.roomid)
-		if room != None:
-			room.on_player_disconnect(player)
 
 
-def on_client_answer(websocket,cmd):
-	playerid = websockets_to_id.get(websocket)
-	if playerid != None:
-		player = clients.get(playerid)
-		if player != None :
-			return player.answerquestion(cmd.get("data"))
+def on_client_answer(player,data):
+	return player.answerquestion(data)
 
-def on_client_handle(websocket,cmd):
-	playerid = websockets_to_id.get(websocket)
-	if playerid != None:
-		player = clients.get(playerid)
-		if player != None :
-			return player.handle(cmd.get("data"))
+def on_client_handle(player):
+	return player.handle(data)
 
+def on_client_chat(player,data):
+	room = rmg.get(player.roomid)
+	if room != None:
+		room.on_player_chat(player,data)
+	else:
+		pl.sendmessage(s2c.chat,0,data)
 
 
 def register_cmds():
-	cmd_handlers[c2s.login.value] = login
-	cmd_handlers[c2s.quest.value] = on_client_answer
-	cmd_handlers[c2s.handle.value] = on_client_handle
+	cmd_handlers[c2s.login] = login
+	cmd_handlers[c2s.quest] = on_client_answer
+	cmd_handlers[c2s.handle] = on_client_handle
+	cmd_handlers[c2s.chat] = on_client_chat
 
 
 register_cmds()

@@ -6,6 +6,7 @@ class c2s(Enum):
     login  = 1
     quest = 2 
     handle = 3 
+    chat = 200 
 
 class s2c(Enum):
     login  = 1
@@ -14,6 +15,7 @@ class s2c(Enum):
     handle = 3
     respone_handle = 30
     message = 100
+    chat = 200
 
 messageQueue = Queue()
 
@@ -48,7 +50,9 @@ def on_room_waiting(player,questid,answer):
 	else:
 		msg = "invalid input!"
 		player.sendmessage(s2c.message,0,msg)
-		room.check_players(player.id)
+		room = rmg.get(player.roomid)
+		if room != None:
+			room.check_players(player.id)
 
 def onlandlord_choose(player,questid,answer):
 	answer = toint(answer)

@@ -1,9 +1,7 @@
 import asyncio
 import common
 import json
-from common import questions
-from common import s2c
-from common import messageQueue
+from common import *
 import roommanager as rmg
 import cardsmanager as cmg
 from cardsmanager import Rule
@@ -39,6 +37,7 @@ class Room(object):
 		self._multiple = 1
 		self.enter_points = 100
 		self.base_points = 50
+		self._status = 0
 
 	@property
 	def id(self):
@@ -80,12 +79,23 @@ class Room(object):
 		for _,pl in self._players.items():
 			if pl.ready == False:
 				return False
+		self._status = 1
 		self.shuffle_cards()
 		for _,pl in self._players.items():
 			pl.add_points(-self.enter_points)
 			msg = "game start you got following cards:\n%s"%(cmg.tostr(pl.cards_list))
 			pl.sendmessage(s2c.message,0,msg)
 		self.roll_landlord(False)
+
+	def ask_landlord(self,player):
+		for _,pl in self._players.items():
+			if player.id == pl.id :
+				player.askquestion(3)
+			else:
+				msg = "waiting for %s in landlord race"%(player.nickname)
+				pl.sendmessage(s2c.message,0,msg)
+
+		
 
 	def roll_landlord(self,takeornot):
 		if self._start_pos < 0 :
@@ -94,7 +104,7 @@ class Room(object):
 			self._start_pos = self._cur_pos
 			print("roll_landlord",self._start_pos,self._cur_pos)
 			player = self._players_pos[self._cur_pos]
-			player.askquestion(3)
+			self.ask_landlord(player)
 		else:
 			print("roll_landlord1",takeornot,self._start_pos,self._cur_pos)
 			player = self._players_pos[self._cur_pos]
@@ -138,7 +148,7 @@ class Room(object):
 				self.roll_discard(self._landlord_pos)
 			else:
 				player = self.next_pos()
-				player.askquestion(3)
+				self.ask_landlord(player)
 				return
 
 
@@ -171,17 +181,31 @@ class Room(object):
 				pl.sendmessage(s2c.message,0,"%s lose connection"%(player.nickname))
 
 	def on_player_reconnected(self,player):
-		for _,pl in self._players.items():
-			if pl.id == player.id :
-				if player.room_pos ==  player.room_pos:
-					if self._last_discard_pos < 0 or self._last_discard_pos == pl.room_pos:
-						player.showcards("your turn to discard",s2c.handle)
+		if self._status > 0 :
+			for _,pl in self._players.items():
+				pl.sendmessage(s2c.message,0,"%s reconnected to room %s"%(player.nickname,self.id))
+				if pl.id == player.id :
+					if self._status > 1:
+						if player.room_pos ==  player.room_pos:
+							if self._last_discard_pos < 0 or self._last_discard_pos == pl.room_pos:
+								player.showcards("your turn to discard",s2c.handle)
+							else:
+								player.showcards("your turn to discard,or pass(0)",s2c.handle)
+						else:
+							player.showcards("waiting for %s to discard ..."%(player.nickname))
 					else:
-						player.showcards("your turn to discard,or pass(0)",s2c.handle)
-				else:
-					player.showcards("waiting for %s to discard ..."%(player.nickname))
-			else:
-				pl.sendmessage(s2c.message,0,"%s reconnected"%(player.nickname))
+						if player.room_pos ==  player.room_pos:
+							player.showcards("your cards:")
+							player.askquestion(3)
+						else:
+							player.showcards("waiting for %s in landlord race"%(player.nickname))
+
+		else:
+			self.check_players()
+
+	def on_player_chat(self,player,msg):
+		for _,pl in self._players.items():
+			pl.sendmessage(s2c.chat,0,"%s say: %s"%(player.nickname,msg))
 
 
 
@@ -197,6 +221,7 @@ class Room(object):
 		self.cards = []
 
 	def roll_discard(self,pos=None):
+		self._status = 2
 		player = None
 		if pos == None:
 			player = self.next_pos()
@@ -258,6 +283,7 @@ class Room(object):
 		self._last_rule = None
 		self._last_discard_pos = -1
 		self._round = 0
+		self._status = 0
 		msg = "farmers"
 		landlord_win = -1
 		if winner.room_pos == self._landlord_pos:
@@ -406,6 +432,8 @@ class Player(object):
 		messageQueue.put(self.websocket.send(msg))
 
 	def showcards(self,msg,e_s2c = None):
+		if self.cards_list == None:
+			return
 		msg = msg or ''
 		msg = "%s\n%s"%(msg,cmg.tostr(self.cards_list))
 		if e_s2c == None :
@@ -471,5 +499,13 @@ class Player(object):
 		else:
 			self.showcards("wrong cards,try again!",s2c.handle)	
 
-	def save_to_db():
-		common.save_player_info(player)
+	def save_to_db(self):
+		common.save_player_info(self)
+
+
+	def get_protocol_id(self):
+		if self._questid != None:
+			return c2s.quest
+		if rmg.is_active_player(self):
+			return c2s.handle
+		return c2s.chat

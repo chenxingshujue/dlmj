@@ -1,158 +1,29 @@
-<html lang="zh-cn">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  	<title>hlm</title>
-    <meta name="keywords" content="">
-    <meta name="description" content="">
-    <link rel="stylesheet" href="./main_files/ljreset.css">
-    <link rel="stylesheet" href="./main_files/manual.css">
-  </head>
-  <body>
-    <div>
+<!DOCTYPE html>
+<html>
+<head>
+<script type="text/javascript" src="./main_files/main.js"></script>
+<script type="text/javascript" src="./main_files/md5.js"></script>
+<style type="text/css">
+  html,body{
+    background-color: black;
+    font-size: 16px;
+  }
+  #terminal{
+    color: #0f0;
+  }
+  #input{width:100%;margin-top: -15px;}
+  #cmdline{border:0;background:transparent;color:#0ff; width:100%;caret-color:#f00;font-size: 1rem;}
+
+</style>
+</head>
+
+<body onbeforeunload="beforeunload()" onload="load()">
+    <div id="output" >
         <p id="terminal"></p>
     </div>
-    <div id="copyright" class="ljtr">
-      Copyright © 2019.All Rights Reserved.
-      <a href="https://www.gznotes.com/">少游科技</a>
-      版权所有
-    </div>
-    <script src="./main_files/jquery.min.js"></script>
-    <script type="text/javascript" src="./main_files/md5.js" ></script>
-    <script>
-      jQuery(document).ready(function(d){
-        var _input = '<input id="passwd" class="cmdline" value="" />';
-        var passwd_input = '<input id="passwd" class="cmdline" type = "password" value="" />';
-        var terminal = d("#terminal");
-        var wsServer = 'ws://106.12.138.195:8765';
-        var message = {}
-        message.id = 1
-        ws = new WebSocket(wsServer);
-        ws.onopen = function (evt) {
-          console.log('WebSocket Connected.');
-          show_cmdline("Welcome to Fight Against Landlords!\nlogin username:",_input)
-        };
+    <div id="input">
+        <input id="cmdline" onkeyup="onkeyup()" value="" />
+    </div>>
+</body>
 
-
-
-        ws.onclose = function (evt) {
-          console.log("Disconnected");
-        };
-
-        ws.onmessage = function (evt) {
-          console.log(evt.data);
-          if('DA_ERR_TIMEOUT'===evt.data){
-            if(confirm('超时提醒：链接已断开【确认】刷新,【取消】关闭')){
-              window.location.reload();
-            }else{
-              //window.close();
-              window.location.href="https://www.gznotes.com/manual/DAssist/";
-            }
-          }else{
-            message = JSON.parse(evt.data)
-            if (message.id == 1) {
-                if (message.ret == 0){
-                    greeting = "\nyour player id is "+ message.playerid + " points is "+ message.points + "\n"
-                    terminal.append(greeting);
-                }else if(message.ret ==1){
-                    message.confirm_secretid = null
-                    show_cmdline("\nlogin password confirm:",passwd_input)
-                }else if(message.ret == 2){
-                    message.username = null
-                    message.secretid = null
-                    message.confirm_secretid = null
-                    show_cmdline("\nusername has been taken or password incorrect!:",_input)
-                }
-            }else{
-                terminal.append(message.data + "\n");
-                terminal.scrollTop(terminal[0].scrollHeight);
-                if (message.id != 100){
-                  d('.cmdline').remove();
-                  terminal.append(_input);
-                  d('.cmdline').focus();
-                }else if (d('.cmdline') != null){
-                  d('.cmdline').remove();
-                }
-            }
-          }
-        };
-
-        ws.onerror = function (evt, e) {
-            terminal.append('Error Occured: ' + evt.data);
-          // alert('Error Occured 1: ' + evt.data);
-          //window.location.reload();
-        };
-
-        d('body').on('keyup','.cmdline',function(event){
-          // console.log(event);
-          if(13===event.keyCode){
-            var v = this.value;
-            d('.cmdline').remove();
-            if('clear'===v){
-              terminal.html('');
-            }
-            if('quit'===v || 'exit'===v){
-              ws.close()
-            }else{
-                if(message.id == 1){
-                    if(message.username == null){
-                        message.username = v
-                        show_cmdline(v +"\nlogin password:",passwd_input)
-                        message.username = v
-                    }else if(message.secretid == null){
-                        message.secretid = md5(v)
-                        login()
-                    }else if(message.confirm_secretid == null){
-                        message.confirm_secretid = md5(v)
-                        if (message.confirm_secretid != message.secretid){
-                          message.secretid = null
-                          message.confirm_secretid = null
-                          show_cmdline("Passwords does not match!\nlogin password:",passwd_input)
-                        }else{
-                          login()
-                        }
-                    }
-                }else{
-                  var cmd = {};
-                  cmd.id = message.id
-                  cmd.data = v
-                  ws.send(JSON.stringify(cmd));
-                }
-            }
-          }
-        });
-
-        function login(){
-          ws.send(JSON.stringify(message))
-        }
-        function show_cmdline(msg,element){
-          if(d('.cmdline') != null){
-            d('.cmdline').remove();
-          }
-          if(msg!=null){
-            terminal.append(msg)
-          }
-          terminal.append(element);
-          d('.cmdline').focus();
-        }
-
-        d(document).keydown(function (event) {
-            if ((event.ctrlKey && event.which===72)){
-                  event.preventDefault();
-                  var inp = d('.cmdline');
-                  var txt = inp.val();
-                  d('.cmdline').val(txt.substring(0,txt.length-1));
-            }
-            if (9 === event.which ){
-               event.preventDefault(); 
-               return false;
-            } 
-         });
-        terminal.click(function(){
-          d('.cmdline').focus();
-        });
-      });
-    </script>
-  </body>
 </html>
