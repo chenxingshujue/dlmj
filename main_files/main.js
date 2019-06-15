@@ -22,9 +22,9 @@ function load(){
   cmdline = document.getElementById('cmdline');
   cmdline.focus();
 
-  timerId = setInterval(function() {
-      cmdline.focus();
-  },1000)
+  // timerId = setInterval(function() {
+  //     cmdline.focus();
+  // },1000)
 
   ws = new WebSocket(wsServer);
   ws.onopen = function (evt) {
