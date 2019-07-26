@@ -77,7 +77,9 @@ function load(){
 
 
 function login(){
-  ws.send(JSON.stringify(message))
+  var cmd = JSON.stringify(message)
+  console.log("log:" + cmd)
+  ws.send(cmd)
 }
 function show_cmdline(msg,type){
   if(msg!=null){
