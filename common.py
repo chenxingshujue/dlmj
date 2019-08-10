@@ -73,7 +73,7 @@ def on_game_continue(player,questid,answer):
 def on_room_join(player,questid,answer):
 	numbers = toint(answer)
 	if numbers != None :
-		if numbers == "0":
+		if numbers == 0:
 			player.askquestion(1)
 		else:
 			room = rmg.get(numbers)
