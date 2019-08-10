@@ -78,7 +78,7 @@ def on_room_join(player,questid,answer):
 		else:
 			room = rmg.get(numbers)
 			if room != None:
-				room.add_player(player)
+				rmg.add_player(room,player)
 			else:
 				msg = "room not exsits,try again!"
 				return player.askquestion_with_msg(msg,questid)
