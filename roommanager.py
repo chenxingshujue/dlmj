@@ -32,13 +32,20 @@ def get_or_create_room(player):
 		_,room = _waiting_rooms.popitem()
 	else:
 		room = create()
-	room.add_player(player)
+
 	if not room.isfull():
 		_waiting_rooms[room.id] = room
+
+	add_player(room,player)
+	return room
+
+def add_player(room,player):
+	room.add_player(player)
+	if not room.isfull():
 		room.check_players()
 	else:
 		room.start_game()
-	return room
+
 
 def check_room_conditions(player):
 	room = get(player.roomid)
