@@ -19,7 +19,8 @@ class s2c(Enum):
 
 messageQueue = Queue()
 
-
+discard_words = "your turn to discard"
+try_discard_words = "your turn to discard,or pass(0)"
 
 questions = pd.read_csv('questions.csv',index_col =0)
 

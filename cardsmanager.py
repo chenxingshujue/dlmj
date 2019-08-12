@@ -75,7 +75,6 @@ def flat_cards(cards):
 	return t
 
 
-
 from enum import Enum
 class pattern(Enum):
     single  = 1
@@ -108,10 +107,12 @@ class Rule(object):
 		self.cards_count.sort()
 		self.flatcount = len(self.cards_count)
 		self.value = 0
+		self.origin_value = 0
 		if parse:
-			self.rule = self.parse_rule_type()
-			if self.rule != None:
-				self.value = self.cards_key[self.flatcount-1] * self.rule.value
+			self.rule_type = self.parse_rule_type()
+			if self.rule_type != None:
+				self.origin_value = self.cards_key[self.flatcount-1]
+				self.value = self.origin_value * self.rule_type.value
 
 	def sort_by_count(self,card):
 		return self.flatcards[card]
@@ -123,9 +124,9 @@ class Rule(object):
 		return self.value > other.value
 
 	def fit(self,other):
-		if self.rule == pattern.bomb :
+		if self.rule_type == pattern.bomb :
 			return True
-		return self.rule == other.rule
+		return self.rule_type == other.rule
 
 	def parse_rule_type(self):
 		if self.parse_straight():

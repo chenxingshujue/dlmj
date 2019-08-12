@@ -1,4 +1,5 @@
 import asyncio
+from threading import Thread
 import websockets
 import http.server
 import socketserver
@@ -49,9 +50,7 @@ async def card_server(websocket,path):
 			print(e)
 			logging.exception(e)
 			break
-		finally:
-			while not messageQueue.empty():
-				await messageQueue.get()
+
 	
 def login(websocket,cmd):
 	username = cmd.get("username")
@@ -172,6 +171,21 @@ def register_cmds():
 
 register_cmds()
 
+
+async def sendmessage():
+	while not messageQueue.empty():
+		await messageQueue.get()
+
+def start_loop(loop):
+    asyncio.set_event_loop(loop)
+    loop.run_forever()
+
+new_loop = asyncio.new_event_loop()
+t = Thread(target=start_loop, args=(new_loop,))
+t.start()
+
+asyncio.run_coroutine_threadsafe(sendmessage(), new_loop)
+asyncio.run_coroutine_threadsafe(rmg.login_robot(), new_loop)
 
 start_server = websockets.serve(card_server,"0.0.0.0",8765)
 loop = asyncio.get_event_loop()

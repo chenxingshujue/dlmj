@@ -1,10 +1,11 @@
 from things import Room
 from things import Player
+from things import Robot
 import common
 from hashlib import md5
 _rooms = {}
 _waiting_rooms = {}
-
+_robot_active = True
 
 def create():
 	room = Room()
@@ -38,6 +39,16 @@ def get_or_create_room(player):
 
 	add_player(room,player)
 	return room
+
+async def login_robot():
+	while len(_waiting_rooms) > 0:
+		_,room = _waiting_rooms.popitem()
+		for x in range(room.stillneed()):
+			robot = Robot()
+			add_player(room,robot)
+			await asyncio.sleep(1)
+
+			
 
 def add_player(room,player):
 	room.add_player(player)

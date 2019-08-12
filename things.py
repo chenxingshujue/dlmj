@@ -91,6 +91,10 @@ class Room(object):
 	def isempty(self):
 		return len(self._players) == 0
 
+	def stillneed(self):
+		return Room._max_players_count_ - len(self._players)
+
+
 	def start_game(self):
 		for _,pl in self._players.items():
 			if pl.ready == False:
@@ -204,10 +208,10 @@ class Room(object):
 					if self._status > 1:
 						if player.room_pos ==  player.room_pos:
 							if self._last_discard_pos < 0 or self._last_discard_pos == pl.room_pos:
-								player.showcards("your turn to discard",s2c.handle)
+								player.showcards(discard_words,s2c.handle)
 							else:
 								player.show_last_discards()
-								player.showcards("your turn to discard,or pass(0)",s2c.handle)
+								player.showcards(try_discard_words,s2c.handle)
 						else:
 							player.showcards("waiting for %s to discard ..."%(player.nickname))
 					else:
@@ -249,9 +253,9 @@ class Room(object):
 		for _,pl in self._players.items():
 			if pl.room_pos ==  player.room_pos:
 				if self._last_discard_pos < 0 or self._last_discard_pos == pl.room_pos:
-					pl.showcards("your turn to discard",s2c.handle)
+					pl.showcards(discard_words,s2c.handle)
 				else:
-					pl.showcards("your turn to discard,or pass(0)",s2c.handle)
+					pl.showcards(try_discard_words,s2c.handle)
 			else:
 				pl.showcards("waiting for %s to discard ..."%(player.nickname))
 				
@@ -271,23 +275,25 @@ class Room(object):
 			if rule.fit(self._last_rule):
 				valid = rule > self._last_rule
 				if not valid:
-					print("error fit ",rule.rule,rule.value,self._last_rule.rule,self._last_rule.value)
+					print("error fit ",rule.rule_type,rule.value,self._last_rule.rule_type,self._last_rule.value)
 			else:
 				player.showcards("can't do that,try again!",s2c.handle)
 				return
 		if valid :
-			self._last_rule = rule
-			self._last_discard_pos = player.room_pos
-			player.discards(rule)
-			if len(player.cards_list) == 0:
-				self.endgame(player)
-			else:
-				for _,pl in self._players.items():
-					pl.show_last_discards()
-				self.roll_discard()
+			self.discards(player,rule)
 		else:
 			player.showcards("too small, try again!",s2c.handle)
 
+	def discards(self,player,rule):
+		self._last_rule = rule
+		self._last_discard_pos = player.room_pos
+		player.discards(rule)
+		if len(player.cards_list) == 0:
+			self.endgame(player)
+		else:
+			for _,pl in self._players.items():
+				pl.show_last_discards()
+			self.roll_discard()
 
 
 	def endgame(self,winner):
@@ -514,7 +520,7 @@ class Player(object):
 		rule = None
 		if valid:
 			rule = Rule(discards,True)
-			valid = rule.rule != None
+			valid = rule.rule_type != None
 			if valid:
 				valid = self.validate(rule)
 
@@ -533,3 +539,197 @@ class Player(object):
 		if rmg.is_active_player(self):
 			return c2s.handle
 		return c2s.chat
+
+class Robot(Player):
+	def save_to_db(self):
+		print("save robot")
+
+	def sendmessage(self,e_s2c,ret,data):
+		print("sendmessage robot")
+
+	def askquestion_with_msg(self,msg,questid,*params):
+		self._questid = questid
+		self.answerquestion(1)
+
+	def showcards(self,msg,e_s2c = None):
+		if self.cards_list == None:
+			return
+		if e_s2c != None :
+			room = rmg.get(self.roomid)
+			if msg == discard_words:
+				rule = self.get_rule_nearly()
+				room.discards(self,rule)
+			else:
+				rule = self.get_rule_nearly(room.last_rule)
+				if rule != None:
+					room.discards(self,rule)
+
+	def get_rule_nearly(self,last_rule):
+		if self._cards_list == None:
+			return
+		rule = None
+		if last_rule == None:
+			card = self._cards_list[0]
+			got_count = self._cards_flat.get(card) or 0
+			discards = [card] * got_count
+			rule = Rule(discards,True)
+		else:
+			index = len(self._cards_list)-1
+			card = 0
+			while index >= 0:
+				card = self._cards_list[index]
+				if  card > last_rule.ori_value :
+					discards = self.get_cards_nearly(index,last_rule)
+					if discards != None:
+						rule = Rule(discards,True)
+						break
+				index -= 1
+
+		return rule
+
+	def get_cards_nearly(self,index,last_rule):
+		card = self._cards_list[index]
+		got_count = self._cards_flat.get(card) or 0
+		if last_rule.rule_type == pattern.single:
+			return [card]
+		elif last_rule.rule_type == pattern.double:
+			if got_count >= 2:
+				return [card] * 2
+		elif last_rule.rule_type == pattern.triple:
+			if got_count >= 3:
+				return [card] * 3
+		elif last_rule.rule_type == pattern.triple_with_single:
+			count = len(self._cards_list)
+			if got_count >= 3 and  count >= 4:
+				i = count -1
+				while i >= 0 :
+					if self._cards_list[i] != card:
+						cards = [card] * 3
+						cards.append(self._cards_list[i])
+						return cards
+					i -= 1
+		elif last_rule.rule_type == pattern.triple_with_two:
+			count = len(self._cards_list)
+			if got_count >= 3 and  count >= 5:
+				i = count -1
+				while i >= 0 :
+					if self._cards_list[i] != card:
+						sec_got_count = self._cards_flat.get(self._cards_list[i]) or 0
+						if sec_got_count >= 2:
+							cards = [card] * 3
+							cards.append(self._cards_list[i],self._cards_list[i])
+							return cards
+					i -= 1
+		elif last_rule.rule_type == pattern.fourfold_with_single:
+			count = len(self._cards_list)
+			if got_count >= 4 and  count >= 5:
+				i = count -1
+				while i >= 0 :
+					if self._cards_list[i] != card:
+						cards = [card] * 4
+						cards.append(self._cards_list[i])
+						return cards
+					i -= 1
+
+		elif last_rule.rule_type == pattern.fourfold_with_two:
+			count = len(self._cards_list)
+			if got_count >= 4 and  count >= 6:
+				cards = [card] * 4
+				i = count -1
+				while i >= 0 :
+					if self._cards_list[i] != card:
+						cards.append(self._cards_list[i])
+					if len(cards) >= 6:
+						break
+					i -= 1
+				return cards
+		elif last_rule.rule_type == pattern.fourfold_with_two_pairs:
+			count = len(self._cards_list)
+			if got_count >= 4 and  count >= 8:
+				cards = [card] * 4
+				i = count -1
+				tempdic = {}
+				while i >= 0 :
+					if self._cards_list[i] != card and tempdic.get(self._cards_list[i]) == None:
+						sec_got_count = self._cards_flat.get(self._cards_list[i]) or 0
+						if sec_got_count >= 2:
+							tempdic[self._cards_list[i]] = sec_got_count - 2
+							cards.append(self._cards_list[i],self._cards_list[i])
+					if len(cards) >= 8:
+						break
+					i -= 1
+				return cards
+		elif last_rule.rule_type == pattern.straight:
+			count = len(self._cards_list)
+			if count >= last_rule.count:
+				cards = [card]
+				for x in range(card - last_rule.count + 1,card):
+					sec_got_count = self._cards_flat.get(x) or 0
+					if sec_got_count > 0:
+						cards.append(x)
+					else:
+						break
+				if len(cards) == last_rule.count:
+					return cards
+		elif last_rule.rule_type == pattern.straight_pairs:
+			count = len(self._cards_list)
+			if got_count >= 2 and count >= last_rule.count:
+				cards = [card] * 2
+				for x in range(card - last_rule.flatcount + 1,card):
+					sec_got_count = self._cards_flat.get(x) or 0
+					if sec_got_count >= 2:
+						cards.append(x,x)
+					else:
+						break
+				if len(cards) == last_rule.count:
+					return cards
+		elif last_rule.rule_type == pattern.plane:
+			count = len(self._cards_list)
+			if got_count >= 3 and count >= last_rule.count:
+				cards = [card] * 3
+				for x in range(card - last_rule.flatcount + 1,card):
+					sec_got_count = self._cards_flat.get(x) or 0
+					if sec_got_count >= 3:
+						cards.append(x,x,x)
+					else:
+						break
+				if len(cards) == last_rule.count:
+					return cards
+		elif last_rule.rule_type == pattern.plane_with_single:
+			count = len(self._cards_list)
+			if got_count >= 3 and count >= last_rule.count:
+				cards = [card] * 3
+				for x in range(card - last_rule.count / 4 + 1,card):
+					sec_got_count = self._cards_flat.get(x) or 0
+					if sec_got_count >= 3:
+						cards.append(x,x,x)
+					else:
+						break
+				i = count -1
+				while i >= 0 :
+					if self._cards_list[i] != card:  # if meet bomb . forget it 
+						cards.append(self._cards_list[i])
+					if len(cards) >= last_rule.count:
+						return cards
+					i -= 1
+		elif last_rule.rule_type == pattern.plane_with_pairs:
+			count = len(self._cards_list)
+			if got_count >= 3 and count >= last_rule.count:
+				cards = [card] * 3
+				for x in range(card - last_rule.count / 5 + 1,card):
+					sec_got_count = self._cards_flat.get(x) or 0
+					if sec_got_count >= 3:
+						cards.append(x,x,x)
+					else:
+						break
+				tempdic = {}
+				i = count -1
+				while i >= 0 :
+					if self._cards_list[i] != card and tempdic.get(self._cards_list[i]) == None:         # if meet super bomb . forget it 
+						sec_got_count = self._cards_flat.get(self._cards_list[i]) or 0
+						if sec_got_count >= 2:
+							tempdic[self._cards_list[i]] = sec_got_count - 2
+							cards.append(self._cards_list[i],self._cards_list[i])
+					if len(cards) >= last_rule.count:
+						return cards
+					i -= 1
