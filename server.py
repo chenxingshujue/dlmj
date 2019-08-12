@@ -173,8 +173,9 @@ register_cmds()
 
 
 async def sendmessage():
-	while not messageQueue.empty():
-		await messageQueue.get()
+	while True:
+		if not messageQueue.empty():
+			await messageQueue.get()
 
 def start_loop(loop):
     asyncio.set_event_loop(loop)
