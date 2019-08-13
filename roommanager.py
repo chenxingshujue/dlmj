@@ -3,8 +3,10 @@ from things import Player
 from things import Robot
 import common
 from hashlib import md5
+import asyncio
 _rooms = {}
 _waiting_rooms = {}
+_robots = {}
 _robot_active = True
 
 def create():
@@ -34,19 +36,24 @@ def get_or_create_room(player):
 	else:
 		room = create()
 
+	add_player(room,player)
+
 	if not room.isfull():
 		_waiting_rooms[room.id] = room
 
-	add_player(room,player)
 	return room
 
-async def login_robot():
-	while len(_waiting_rooms) > 0:
+def login_robot():
+	if len(_waiting_rooms) > 0:
 		_,room = _waiting_rooms.popitem()
-		for x in range(room.stillneed()):
-			robot = Robot()
+		if not room.isfull():
+			robot = Robot(None)
 			add_player(room,robot)
-			await asyncio.sleep(1)
+			_robots[robot.id] = robot
+
+			if not room.isfull():
+				_waiting_rooms[room.id] = room
+				
 
 			
 
@@ -76,11 +83,14 @@ def remove_player(player):
 	room = get(player.roomid)
 	if room != None:
 		room.remove_player(player)
+		if isinstance(player,Robot):
+			del _robots[player.id] 
+
 		if room.isempty():
 			del _rooms[room.id]
 			if _waiting_rooms.get(room.id):
 				del _waiting_rooms[room.id] 
-	elif not room.isfull():
-		_waiting_rooms[room.id] = room
-		room.check_players()
+		elif not room.isfull():
+			_waiting_rooms[room.id] = room
+			room.check_players()
 	return room

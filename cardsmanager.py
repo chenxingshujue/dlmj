@@ -126,7 +126,7 @@ class Rule(object):
 	def fit(self,other):
 		if self.rule_type == pattern.bomb :
 			return True
-		return self.rule_type == other.rule
+		return self.rule_type == other.rule_type
 
 	def parse_rule_type(self):
 		if self.parse_straight():

@@ -5,12 +5,13 @@ from common import *
 import roommanager as rmg
 import cardsmanager as cmg
 from cardsmanager import Rule
+from cardsmanager import pattern
 import random
 correct_answer_key = "a0"
 _CARDS_COUNT_ON_START = 17
 class Room(object):
 	"""docstring for Room"""
-	_max_players_count_ = 2
+	_max_players_count_ = 3
 	_global_id_  = 0
 	# def __new__(cls):
 	# 	print("__new__", cls == Room)
@@ -297,16 +298,6 @@ class Room(object):
 
 
 	def endgame(self,winner):
-		self._cards = None
-		self._landlord_pos = -1
-		self._pre_landlord_pos = -1
-		self._cur_pos = 0
-		self._start_pos = -1
-		self._start_take = False
-		self._last_rule = None
-		self._last_discard_pos = -1
-		self._round = 0
-		self._status = 0
 		msg = "farmers"
 		landlord_win = -1
 		if winner.room_pos == self._landlord_pos:
@@ -321,6 +312,16 @@ class Room(object):
 				
 			pl.askquestion(4,msg,pl.points)
 
+		self._cards = None
+		self._landlord_pos = -1
+		self._pre_landlord_pos = -1
+		self._cur_pos = 0
+		self._start_pos = -1
+		self._start_take = False
+		self._last_rule = None
+		self._last_discard_pos = -1
+		self._round = 0
+		self._status = 0
 
 
 
@@ -541,35 +542,56 @@ class Player(object):
 		return c2s.chat
 
 class Robot(Player):
+
+
 	def save_to_db(self):
 		print("save robot")
 
 	def sendmessage(self,e_s2c,ret,data):
-		print("sendmessage robot")
+		pass
+		# print("sendmessage robot",data)
 
 	def askquestion_with_msg(self,msg,questid,*params):
-		self._questid = questid
-		self.answerquestion(1)
+		print("askquestion_with_msg robot",msg,questid,*params)
+		if questid == None:
+			return
+		if questid == 3 or questid == 4:
+			self.questid = questid
+			answer = questions.at[questid,"a0"]
+
+			loop.call_later(1,self.answer_question_soon,questid,answer)
+
+		
+
+	def answer_question_soon(self,questid,answer):
+		common.answer_question(self,questid,answer)
+
+		
 
 	def showcards(self,msg,e_s2c = None):
+		loop.call_later(1,self.showcards_soon,msg,e_s2c)
+
+	def showcards_soon(self,msg,e_s2c = None):
 		if self.cards_list == None:
 			return
 		if e_s2c != None :
 			room = rmg.get(self.roomid)
 			if msg == discard_words:
-				rule = self.get_rule_nearly()
+				rule = self.get_rule_nearly(None)
 				room.discards(self,rule)
 			else:
 				rule = self.get_rule_nearly(room.last_rule)
 				if rule != None:
 					room.discards(self,rule)
+				else:
+					room.try_discards(self,None)
 
 	def get_rule_nearly(self,last_rule):
 		if self._cards_list == None:
 			return
 		rule = None
 		if last_rule == None:
-			card = self._cards_list[0]
+			card = self._cards_list[len(self._cards_list)-1]
 			got_count = self._cards_flat.get(card) or 0
 			discards = [card] * got_count
 			rule = Rule(discards,True)
@@ -578,7 +600,7 @@ class Robot(Player):
 			card = 0
 			while index >= 0:
 				card = self._cards_list[index]
-				if  card > last_rule.ori_value :
+				if  card > last_rule.origin_value :
 					discards = self.get_cards_nearly(index,last_rule)
 					if discards != None:
 						rule = Rule(discards,True)
@@ -617,7 +639,8 @@ class Robot(Player):
 						sec_got_count = self._cards_flat.get(self._cards_list[i]) or 0
 						if sec_got_count >= 2:
 							cards = [card] * 3
-							cards.append(self._cards_list[i],self._cards_list[i])
+							cards.append(self._cards_list[i])
+							cards.append(self._cards_list[i])
 							return cards
 					i -= 1
 		elif last_rule.rule_type == pattern.fourfold_with_single:
@@ -654,7 +677,8 @@ class Robot(Player):
 						sec_got_count = self._cards_flat.get(self._cards_list[i]) or 0
 						if sec_got_count >= 2:
 							tempdic[self._cards_list[i]] = sec_got_count - 2
-							cards.append(self._cards_list[i],self._cards_list[i])
+							cards.append(self._cards_list[i])
+							cards.append(self._cards_list[i])
 					if len(cards) >= 8:
 						break
 					i -= 1
@@ -678,7 +702,8 @@ class Robot(Player):
 				for x in range(card - last_rule.flatcount + 1,card):
 					sec_got_count = self._cards_flat.get(x) or 0
 					if sec_got_count >= 2:
-						cards.append(x,x)
+						cards.append(x)
+						cards.append(x)
 					else:
 						break
 				if len(cards) == last_rule.count:
@@ -690,7 +715,7 @@ class Robot(Player):
 				for x in range(card - last_rule.flatcount + 1,card):
 					sec_got_count = self._cards_flat.get(x) or 0
 					if sec_got_count >= 3:
-						cards.append(x,x,x)
+						cards.extend([x,x,x])
 					else:
 						break
 				if len(cards) == last_rule.count:
@@ -702,7 +727,7 @@ class Robot(Player):
 				for x in range(card - last_rule.count / 4 + 1,card):
 					sec_got_count = self._cards_flat.get(x) or 0
 					if sec_got_count >= 3:
-						cards.append(x,x,x)
+						cards.extend([x,x,x])
 					else:
 						break
 				i = count -1
@@ -719,7 +744,7 @@ class Robot(Player):
 				for x in range(card - last_rule.count / 5 + 1,card):
 					sec_got_count = self._cards_flat.get(x) or 0
 					if sec_got_count >= 3:
-						cards.append(x,x,x)
+						cards.extend([x,x,x])
 					else:
 						break
 				tempdic = {}
@@ -729,7 +754,7 @@ class Robot(Player):
 						sec_got_count = self._cards_flat.get(self._cards_list[i]) or 0
 						if sec_got_count >= 2:
 							tempdic[self._cards_list[i]] = sec_got_count - 2
-							cards.append(self._cards_list[i],self._cards_list[i])
+							cards.extend([self._cards_list[i],self._cards_list[i]])
 					if len(cards) >= last_rule.count:
 						return cards
 					i -= 1

@@ -2,6 +2,7 @@ import pandas as pd
 from queue import Queue
 import roommanager as rmg
 from enum import Enum
+import asyncio
 class c2s(Enum):
     login  = 1
     quest = 2 
@@ -18,6 +19,8 @@ class s2c(Enum):
     chat = 200
 
 messageQueue = Queue()
+loop = asyncio.get_event_loop()
+
 
 discard_words = "your turn to discard"
 try_discard_words = "your turn to discard,or pass(0)"
@@ -152,3 +155,4 @@ def save_player_info(player):
 	sql = f"update players set points = '{pl.points}' where id = '{player.id}';"
 	cursor.execute(sql)
 	mysql_conn.commit()
+

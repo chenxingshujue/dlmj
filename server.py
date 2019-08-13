@@ -26,7 +26,7 @@ websockets_to_id = {}
 cmd_handlers = {}
 
 async def card_server(websocket,path):
-	print(path)
+	print(f"new client connection at {path}")
 	while True:
 		try:
 			cmd = await websocket.recv()
@@ -50,6 +50,7 @@ async def card_server(websocket,path):
 			print(e)
 			logging.exception(e)
 			break
+
 
 	
 def login(websocket,cmd):
@@ -170,25 +171,38 @@ def register_cmds():
 
 
 register_cmds()
-
-
-async def sendmessage():
+@asyncio.coroutine
+def sendmessage():
 	while True:
+		yield 
 		if not messageQueue.empty():
-			await messageQueue.get()
+			yield from messageQueue.get()
 
-def start_loop(loop):
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
 
-new_loop = asyncio.new_event_loop()
-t = Thread(target=start_loop, args=(new_loop,))
-t.start()
+async def login_robot():
+	while True:
+		await asyncio.sleep(1)
+		rmg.login_robot()
 
-asyncio.run_coroutine_threadsafe(sendmessage(), new_loop)
-asyncio.run_coroutine_threadsafe(rmg.login_robot(), new_loop)
+
+# t = Thread(target=start_loop, args=(new_loop,))
+# t.start()
+# print('TIME: {}'.format(time.time() - start))
 
 start_server = websockets.serve(card_server,"0.0.0.0",8765)
-loop = asyncio.get_event_loop()
-loop.run_until_complete(start_server)
+
+# async def main():
+	# while True:
+	# 	await sendmessage()
+		# login_robot()
+
+tasks = [
+	start_server,
+	login_robot(),
+	sendmessage()
+]
+loop.run_until_complete(asyncio.wait(tasks))
+# loop.run_until_complete(start_server)
+# asyncio.run_coroutine_threadsafe(sendmessage(), loop)
+# asyncio.run_coroutine_threadsafe(login_robot(), loop)
 loop.run_forever()

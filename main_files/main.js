@@ -1,7 +1,7 @@
 var terminal = null
 var cmdline =null
-var wsServer = 'ws://106.12.138.195:8765';
-// var wsServer = 'ws://192.168.144.1:8765';
+// var wsServer = 'ws://106.12.138.195:8765';
+var wsServer = 'ws://192.168.144.1:8765';
 var message = {}
 message.id = 1
 var ws = null
