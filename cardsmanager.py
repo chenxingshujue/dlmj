@@ -1,8 +1,10 @@
+import random
 CARDS = [3,4,5,6,7,8,9,10,11,12,13,14,15,
 		 3,4,5,6,7,8,9,10,11,12,13,14,15,
 		 3,4,5,6,7,8,9,10,11,12,13,14,15,
 		 3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
 
+TEST_CARDS = [5,5,5,6,6,6,7,8,9,9,9,10,10,10,3,4,11]
 CARDS_MIN_VALUE = 3
 CARDS_MAX_VALUE = 17
 
@@ -21,12 +23,20 @@ def sortFunc_0(t):
 def sortFunc_1(t):
 	return t[1]
 
-import random
+
 def sample(cards,count):
 	total = len(cards)
 	if total < count:
 		return
 	temp = []
+	# temp = TEST_CARDS.copy()
+	# count -= len(temp)
+	# total -= len(temp)
+	# for x in temp:
+	# 	cards.remove(x)
+	# TEST_CARDS.clear()
+
+
 	while count > 0:
 		index = random.randint(0,total-1)
 		card = cards.pop(index)
@@ -34,6 +44,7 @@ def sample(cards,count):
 		count -= 1
 		total -= 1
 	return cards,temp
+
 
 def tostr(cards):
 	temp = []
@@ -133,6 +144,10 @@ class Rule(object):
 			return pattern.straight
 		if self.parse_straight_pairs():
 			return pattern.straight_pairs
+
+		fit,rule_type = self.parse_plane()
+		if fit :
+			return rule_type
 		if self.count == 1:
 			return pattern.single
 		elif self.count == 2:
@@ -164,7 +179,8 @@ class Rule(object):
 		elif self.count == 8:
 			if self.cards_count[0] == 2 and self.cards_count[1] == 2 and self.cards_count[2] == 4:
 				return pattern.fourfold_with_two_pairs
-
+			if self.cards_count[2] == 3 and self.cards_count[3] == 3 :
+				return pattern.plane_with_single
 
 	def parse_straight(self,straight_count = 5):
 		straight = False
@@ -195,4 +211,39 @@ class Rule(object):
 		if not Rule(self.cards_key,False).parse_straight(3):
 			return False
 		return True
+
+	def parse_plane(self):
+		if self.count < 6:
+			return False,None
+		if self.count % 2 > 0:
+			return False,None
+
+		triple_count = 0
+		pairs_count = 0
+
+		for c in self.cards_count:
+			if c >= 3:
+				triple_count += 1
+			elif c == 2:
+				pairs_count += 1
+
+		if triple_count < 2 :
+			return False,None
+
+		fit = False
+		rule_type = None
+		if pairs_count > 0:
+			if triple_count != pairs_count:
+				return False,None
+			if triple_count * 3 + pairs_count * 2 == self.count :
+				fit = True
+				rule_type =  pattern.plane_with_pairs
+		else:
+			if self.count != triple_count * 3:
+				fit = True
+				rule_type =  pattern.plane
+			if self.count == triple_count * 4:
+				fit = True
+				rule_type = pattern.plane_with_single
+		return fit,rule_type
 

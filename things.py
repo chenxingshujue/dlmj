@@ -78,12 +78,13 @@ class Room(object):
 	def remove_player(self,player):
 		del self._players[player.id]
 		del self._players_pos[player.room_pos]
-		player.roomid = 0
-		player.room_pos = -1
 		for _,pl in self._players.items():
-			msg = "%s leave room %s"%(pl.nickname,self._id)
+			msg = "%s leave room %s"%(player.nickname,self._id)
 			pl.sendmessage(s2c.message,0,msg)
 
+		print("remove_player",player.room_pos)
+		player.roomid = 0
+		player.room_pos = -1
 		self.check_players()
 
 	def isfull(self):
@@ -190,6 +191,8 @@ class Room(object):
 		more =  Room._max_players_count_ - len(self._players)
 		if more > 0:
 			for _,pl in self._players.items():
+				if not pl.ready:
+					continue
 				if playerid != None:
 					if pl.id == playerid :
 						pl.askquestion(2,more)
@@ -338,7 +341,7 @@ class Player(object):
 		self.secretid = 0
 		self._online = 0
 		self.websocket = None
-		self._questid = 0
+		self._questid = None
 		self._roomid = 0
 		self.room_pos = -1
 		self._cards_flat = None
@@ -473,8 +476,8 @@ class Player(object):
 
 
 	def askquestion_with_msg(self,msg,questid,*params):
-		self._questid = questid
-		print("askquestion_with_msg",questid,self._questid,params)
+		print("askquestion_with_msg",questid,self.questid,params)
+		self.questid = questid
 		data = questions.at[questid,"quest"]
 		if len(params) > 0 :
 			data = data %(params)
@@ -489,7 +492,7 @@ class Player(object):
 
 	def answerquestion(self,answer):
 		print("answerquestion",self._questid,answer)
-		if self._questid == None:
+		if self.questid == None:
 			return
 		questid = self.questid
 		self.questid = None
@@ -565,7 +568,7 @@ class Robot(Player):
 
 	def answer_question_soon(self,questid,answer):
 		common.answer_question(self,questid,answer)
-
+		self.questid = None
 		
 
 	def showcards(self,msg,e_s2c = None):
@@ -692,7 +695,7 @@ class Robot(Player):
 					if sec_got_count > 0:
 						cards.append(x)
 					else:
-						break
+						return None
 				if len(cards) == last_rule.count:
 					return cards
 		elif last_rule.rule_type == pattern.straight_pairs:
@@ -705,7 +708,7 @@ class Robot(Player):
 						cards.append(x)
 						cards.append(x)
 					else:
-						break
+						return None
 				if len(cards) == last_rule.count:
 					return cards
 		elif last_rule.rule_type == pattern.plane:
@@ -717,19 +720,19 @@ class Robot(Player):
 					if sec_got_count >= 3:
 						cards.extend([x,x,x])
 					else:
-						break
+						return None
 				if len(cards) == last_rule.count:
 					return cards
 		elif last_rule.rule_type == pattern.plane_with_single:
 			count = len(self._cards_list)
 			if got_count >= 3 and count >= last_rule.count:
 				cards = [card] * 3
-				for x in range(card - last_rule.count / 4 + 1,card):
+				for x in range(card - last_rule.count // 4 + 1,card):
 					sec_got_count = self._cards_flat.get(x) or 0
 					if sec_got_count >= 3:
 						cards.extend([x,x,x])
 					else:
-						break
+						return None
 				i = count -1
 				while i >= 0 :
 					if self._cards_list[i] != card:  # if meet bomb . forget it 
@@ -741,12 +744,12 @@ class Robot(Player):
 			count = len(self._cards_list)
 			if got_count >= 3 and count >= last_rule.count:
 				cards = [card] * 3
-				for x in range(card - last_rule.count / 5 + 1,card):
+				for x in range(card - last_rule.count // 5 + 1,card):
 					sec_got_count = self._cards_flat.get(x) or 0
 					if sec_got_count >= 3:
 						cards.extend([x,x,x])
 					else:
-						break
+						return None
 				tempdic = {}
 				i = count -1
 				while i >= 0 :
