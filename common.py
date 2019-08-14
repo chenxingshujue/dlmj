@@ -81,6 +81,7 @@ def on_room_join(player,questid,answer):
 			player.askquestion(1)
 		else:
 			room = rmg.get(numbers)
+			print("on_room_join",numbers)
 			if room != None:
 				rmg.add_player(room,player)
 			else:

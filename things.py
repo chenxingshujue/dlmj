@@ -59,6 +59,9 @@ class Room(object):
 	def last_rule(self):
 		return self._last_rule
 	
+	@property
+	def landlord_pos(self):
+		return self._landlord_pos
 	
 
 	def add_player(self,player):
@@ -71,6 +74,7 @@ class Room(object):
 				player.room_pos = x
 				break
 		player.roomid = self.id
+		player.ready = True
 		for _,pl in self._players.items():
 			msg = "%s enter room %s at pos %s points %s"%(player.nickname,self._id,player.room_pos,player.points)
 			pl.sendmessage(s2c.message,0,msg)
@@ -210,8 +214,8 @@ class Room(object):
 				pl.sendmessage(s2c.message,0,"%s reconnected to room %s"%(player.nickname,self.id))
 				if pl.id == player.id :
 					if self._status > 1:
-						if player.room_pos ==  player.room_pos:
-							if self._last_discard_pos < 0 or self._last_discard_pos == pl.room_pos:
+						if pl.room_pos ==  player.room_pos:
+							if self.is_new_chain():
 								player.showcards(discard_words,s2c.handle)
 							else:
 								player.show_last_discards()
@@ -256,14 +260,15 @@ class Room(object):
 
 		for _,pl in self._players.items():
 			if pl.room_pos ==  player.room_pos:
-				if self._last_discard_pos < 0 or self._last_discard_pos == pl.room_pos:
+				if self.is_new_chain():
 					pl.showcards(discard_words,s2c.handle)
 				else:
 					pl.showcards(try_discard_words,s2c.handle)
 			else:
 				pl.showcards("waiting for %s to discard ..."%(player.nickname))
-				
-		
+	
+	def is_new_chain(self):
+		return self._last_discard_pos < 0 or self._last_discard_pos == self._cur_pos
 
 	def try_discards(self,player,rule):
 		if rule == None:
@@ -292,11 +297,11 @@ class Room(object):
 		self._last_rule = rule
 		self._last_discard_pos = player.room_pos
 		player.discards(rule)
+		for _,pl in self._players.items():
+			pl.show_last_discards()
 		if len(player.cards_list) == 0:
 			self.endgame(player)
 		else:
-			for _,pl in self._players.items():
-				pl.show_last_discards()
 			self.roll_discard()
 
 
@@ -536,13 +541,18 @@ class Player(object):
 	def save_to_db(self):
 		common.save_player_info(self)
 
-
 	def get_protocol_id(self):
 		if self._questid != None:
 			return c2s.quest
 		if rmg.is_active_player(self):
 			return c2s.handle
 		return c2s.chat
+
+	def islandlord(self):
+		room = rmg.get(self.roomid)
+		return room.landlord_pos == self.room_pos
+
+
 
 class Robot(Player):
 
@@ -572,22 +582,51 @@ class Robot(Player):
 		
 
 	def showcards(self,msg,e_s2c = None):
-		loop.call_later(1,self.showcards_soon,msg,e_s2c)
-
-	def showcards_soon(self,msg,e_s2c = None):
 		if self.cards_list == None:
 			return
 		if e_s2c != None :
+			loop.call_later(1,self.showcards_soon)
+
+	def whether_to_discard(self):
+		room = rmg.get(self.roomid)
+		if room == None:
+			return False,None
+		last_rule = room.last_rule
+		if last_rule == None:
+			return True,None
+		if self.islandlord():
+			return True,last_rule
+		if room.last_discard_player != None:
+			if room.last_discard_player.islandlord():
+				return True,last_rule
+			elif room.last_discard_player != self:
+				if len(self._cards_list) -last_rule.count <= 2 :
+					return True,last_rule
+				elif last_rule.rule_type == pattern.single and (last_rule.origin_value < 11):
+					 last_rule = Rule([10],True)
+					 return True,last_rule
+				else:
+					return False,last_rule
+					
+
+		return True,last_rule
+
+
+	def showcards_soon(self):
+			discard,last_rule = self.whether_to_discard()
 			room = rmg.get(self.roomid)
-			if msg == discard_words:
-				rule = self.get_rule_nearly(None)
-				room.discards(self,rule)
-			else:
-				rule = self.get_rule_nearly(room.last_rule)
-				if rule != None:
+			if discard :
+				if room.is_new_chain():
+					rule = self.get_rule_nearly(None)
 					room.discards(self,rule)
 				else:
-					room.try_discards(self,None)
+					rule = self.get_rule_nearly(last_rule)
+					if rule != None:
+						room.discards(self,rule)
+					else:
+						room.try_discards(self,None)
+			else:
+				room.try_discards(self,None)
 
 	def get_rule_nearly(self,last_rule):
 		if self._cards_list == None:

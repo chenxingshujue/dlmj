@@ -160,7 +160,7 @@ def on_client_chat(player,data):
 	if room != None:
 		room.on_player_chat(player,data)
 	else:
-		pl.sendmessage(s2c.chat,0,data)
+		player.sendmessage(s2c.chat,0,data)
 
 
 def register_cmds():
@@ -181,7 +181,7 @@ def sendmessage():
 
 async def login_robot():
 	while True:
-		await asyncio.sleep(10)
+		await asyncio.sleep(1)
 		rmg.login_robot()
 
 
