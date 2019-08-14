@@ -181,7 +181,7 @@ def sendmessage():
 
 async def login_robot():
 	while True:
-		await asyncio.sleep(1)
+		await asyncio.sleep(10)
 		rmg.login_robot()
 
 

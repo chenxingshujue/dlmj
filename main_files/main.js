@@ -14,10 +14,13 @@ function beforeunload() {
   clearInterval(timerId)
 }
 function bodyclick(){
+  if(cmdline){
     cmdline.focus();
+  }
 };
 function load(){
   console.log("onload")
+  output = document.getElementById('output');
   terminal = document.getElementById('terminal');
   cmdline = document.getElementById('cmdline');
   cmdline.focus();
@@ -36,7 +39,7 @@ function load(){
   };
 
   ws.onmessage = function (evt) {
-    console.log(evt.data);
+    // console.log(evt.data);
     if('DA_ERR_TIMEOUT'===evt.data){
       if(confirm('超时提醒：链接已断开【确认】刷新,【取消】关闭')){
         window.location.reload();
@@ -61,7 +64,7 @@ function load(){
           }
       }else{
           show_cmdline(message.data + "<br/>","text")
-          terminal.scrollTop(terminal[0].scrollHeight);
+          document.documentElement.scrollTop = terminal.scrollHeight;
       }
     }
   };
@@ -78,7 +81,7 @@ function load(){
 
 function login(){
   var cmd = JSON.stringify(message)
-  console.log("log:" + cmd)
+  // console.log("log:" + cmd)
   ws.send(cmd)
 }
 function show_cmdline(msg,type){
@@ -92,8 +95,8 @@ function show_cmdline(msg,type){
 }
 
 
-onkeyup = function(event){
-    console.log(event);
+onkeyup1 = function(event){
+    // console.log(event);
     if(13===event.keyCode){
       var v = cmdline.value;
       if('clear'===v){
