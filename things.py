@@ -491,6 +491,8 @@ class Player(object):
  		room = rmg.get(self.roomid)
  		if room != None and room.last_rule != None:
  			msg = "%s discard %s"%(room.last_discard_player.nickname,cmg.tostr(room.last_rule.cards))
+ 			if room.last_discard_player.get_counts() < 4:
+ 				msg = "%s (left:%s)"%(msg,room.last_discard_player.get_counts())
  			self.sendmessage(s2c.message,0,msg)
 
 
@@ -547,6 +549,8 @@ class Player(object):
 							discards.append(17)
 						else:
 							discards.append(16)
+					else:
+						discards.append(card)
 
 				else: 
 					discards.append(card)
@@ -579,7 +583,8 @@ class Player(object):
 		room = rmg.get(self.roomid)
 		return room.landlord_pos == self.room_pos
 
-
+	def get_counts(self):
+		return len(self.cards_list)
 
 class Robot(Player):
 
