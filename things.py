@@ -428,7 +428,7 @@ class Player(object):
 		self._questid = None
 		self._cards_flat = None
 		self._cards_list = None
-		self.ready = True	
+		self.ready = False	
 
 	def discards(self,rule):
 		if self._cards_list == None:
