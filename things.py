@@ -190,6 +190,11 @@ class Room(object):
 			next_pos = 1
 		return next_pos
 
+	def get_next_pos_by(self,pos):
+		next_pos = pos + 1
+		if next_pos > Room._max_players_count_:
+			next_pos = 1
+		return next_pos
 
 	def check_players(self,playerid=None):
 		more =  Room._max_players_count_ - len(self._players)
@@ -312,7 +317,7 @@ class Room(object):
 			landlord_win = 1
 			msg = "landlord"
 		for _,pl in self._players.items():
-			pl.ready = False
+			pl.reset()
 			if pl.room_pos == self._landlord_pos:
 				pl.add_points(self.base_points * self._multiple * landlord_win * (Room._max_players_count_ - 1))
 			else:
@@ -419,6 +424,11 @@ class Player(object):
 		self._cards_flat = cmg.flat_cards(self._cards_list)
 		self._cards_list.sort(reverse=True)
 
+	def reset(self):
+		self._questid = None
+		self._cards_flat = None
+		self._cards_list = None
+		self.ready = True	
 
 	def discards(self,rule):
 		if self._cards_list == None:
@@ -515,7 +525,7 @@ class Player(object):
 		if room.cur_pos != self.room_pos:
 			print("error handle,not your turn")
 			return
-		if len(data[0]) > 0 and data[0] == '0':
+		if len(data) > 0 and len(data[0]) > 0 and data[0] == '0':
 			room.try_discards(self,None)
 			return
 
@@ -599,18 +609,35 @@ class Robot(Player):
 		if room.last_discard_player != None:
 			if room.last_discard_player.islandlord():
 				return True,last_rule
-			elif room.last_discard_player != self:
-				if len(self._cards_list) -last_rule.count <= 2 :
-					return True,last_rule
-				elif last_rule.rule_type == pattern.single and (last_rule.origin_value < 11):
-					 last_rule = Rule([10],True)
-					 return True,last_rule
-				else:
-					return False,last_rule
-					
+			elif self.left_to_landlord():
+				if room.last_discard_player != self:   #take over card chain
+					if len(self._cards_list) -last_rule.count <= 2 :
+						return True,last_rule
+					elif last_rule.rule_type == pattern.single and (last_rule.origin_value < 11):
+						last_rule = Rule([10],True)
+						return True,last_rule
+					else:
+						return False,last_rule
+			elif self.right_to_landlord():
+				if room.last_discard_player != self:
+					if len(self._cards_list) -last_rule.count <= 2 :
+						return True,last_rule 
+					elif last_rule.rule_type == pattern.single and (last_rule.origin_value < 14):
+						return True,last_rule
+					else:
+						return False,last_rule
+
+
 
 		return True,last_rule
 
+	def left_to_landlord(self):
+		room = rmg.get(self.roomid)
+		return room.landlord_pos == room.get_next_pos_by(self.room_pos)
+
+	def right_to_landlord(self):
+		room = rmg.get(self.roomid)
+		return room.get_next_pos_by(room.landlord_pos) == self.room_pos
 
 	def showcards_soon(self):
 			discard,last_rule = self.whether_to_discard()
@@ -634,8 +661,7 @@ class Robot(Player):
 		rule = None
 		if last_rule == None:
 			card = self._cards_list[len(self._cards_list)-1]
-			got_count = self._cards_flat.get(card) or 0
-			discards = [card] * got_count
+			discards = cmg.try_get_pattern(card,self._cards_flat)
 			rule = Rule(discards,True)
 		else:
 			index = len(self._cards_list)-1

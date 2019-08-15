@@ -85,6 +85,63 @@ def flat_cards(cards):
 			t[c] += 1
 	return t
 
+def try_get_pattern(card,cards_flat):
+	if card > 15:
+		if cards_flat.get(16) and cards_flat.get(17):
+			return [16,17]
+		return [card]
+	got_count = cards_flat.get(card) or 0
+	discards = [card] * got_count
+	if got_count == 1 :
+		if card <= 11:
+			next_card = card+1
+			next_card_count = cards_flat.get(next_card) or 0
+			while next_card_count > 0 and next_card_count < 4 and next_card < 15:
+				next_card += 1
+				next_card_count = cards_flat.get(next_card) or 0
+			if next_card - card >= 5:
+				return [i for i in range(card,next_card)]
+
+			next_card = card + 1
+			next_card_count = cards_flat.get(next_card) or 0
+			while next_card_count != 3 and next_card < 10 :
+				next_card += 1
+				next_card_count = cards_flat.get(next_card) or 0
+			if next_card_count == 3 :
+				return [card,next_card,next_card,next_card]
+	elif got_count == 2 :
+		if card <= 13:
+			next_card = card+1
+			next_card_count = cards_flat.get(next_card) or 0
+			while next_card_count == 2 :
+				next_card += 1
+				next_card_count = cards_flat.get(next_card) or 0
+			if next_card - card >= 3:
+				return [i for i in range(card,next_card)] * 2
+
+			next_card = card + 1
+			next_card_count = cards_flat.get(next_card) or 0
+			while next_card_count != 3 and next_card < 10 :
+				next_card += 1
+				next_card_count = cards_flat.get(next_card) or 0
+			if next_card_count == 3 :
+				return [card,card,next_card,next_card,next_card]
+	elif got_count == 3 :
+		if card <= 10:
+			next_card = card + 1
+			next_card_count = cards_flat.get(next_card) or 0
+			while (next_card_count > 3) or next_card > 15 :
+				next_card += 1
+				next_card_count = cards_flat.get(next_card) or 0
+			if next_card_count <= 2:
+				discards.extend([next_card] * next_card_count)
+			elif next_card_count == 3 and next_card - card == 1:
+				discards.extend([next_card] * next_card_count)
+
+	return discards
+
+
+
 
 from enum import Enum
 class pattern(Enum):
@@ -105,6 +162,7 @@ class pattern(Enum):
 
 class Rule(object):
 	"""docstring for Rule"""
+
 	def __init__(self, cards,parse):
 		super(Rule, self).__init__()
 		cards.sort()
