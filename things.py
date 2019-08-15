@@ -682,9 +682,22 @@ class Robot(Player):
 			return
 		rule = None
 		if last_rule == None:
-			card = self._cards_list[len(self._cards_list)-1]
-			discards = cmg.try_get_pattern(card,self._cards_flat)
-			rule = Rule(discards,True)
+
+			index = len(self._cards_list)-1
+			card = 0
+			while index >= 0:
+				card = self._cards_list[index]
+				discards = cmg.try_get_pattern(card,self._cards_flat)
+				if discards != None:
+					rule = Rule(discards,True)
+					break
+				index -= 1
+			if None == rule :
+				card = self._cards_list[len(self._cards_list)-1]
+				got_count = self._cards_flat.get(card) or 0
+				discards = [card] * got_count
+				rule = Rule(discards,True)
+
 		else:
 			index = len(self._cards_list)-1
 			card = 0
@@ -696,12 +709,36 @@ class Robot(Player):
 						rule = Rule(discards,True)
 						break
 				index -= 1
-
+			if rule == None and last_rule.rule_type != pattern.bomb:
+				discards = self.try_get_bomb()
+				if discards != None:
+					rule = Rule(discards,True)
 		return rule
+
+	def try_get_bomb(self):
+		index = len(self._cards_list)-1
+		card = 0
+		while index >= 0:
+			card = self._cards_list[index]
+			got_count = self._cards_flat.get(card) or 0
+			if got_count >= 4:
+				return [card] * got_count
+			elif card == 16 and self._cards_flat.get(17) != None:
+				return [16,17]
+			index -= 1
+
 
 	def get_cards_nearly(self,index,last_rule):
 		card = self._cards_list[index]
 		got_count = self._cards_flat.get(card) or 0
+		if last_rule.rule_type != pattern.bomb and got_count >= 4:
+			return
+		if last_rule.rule_type == pattern.bomb:
+			if got_count >= 4:
+				return [card] * got_count
+			elif card == 16 and self._cards_flat.get(17) != None:
+				return [16,17]
+
 		if last_rule.rule_type == pattern.single:
 			return [card]
 		elif last_rule.rule_type == pattern.double:
@@ -848,3 +885,10 @@ class Robot(Player):
 					if len(cards) >= last_rule.count:
 						return cards
 					i -= 1
+		elif last_rule.rule_type == pattern.bomb:
+			if got_count >= 4:
+				return [card] * got_count			
+			elif card == 16 and self._cards_flat.get(17) != None:
+				return [16,17]
+
+

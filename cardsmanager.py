@@ -4,7 +4,7 @@ CARDS = [3,4,5,6,7,8,9,10,11,12,13,14,15,
 		 3,4,5,6,7,8,9,10,11,12,13,14,15,
 		 3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
 
-TEST_CARDS = [5,5,5,6,6,6,7,8,9,9,9,10,10,10,3,4,11]
+TEST_CARDS = [5,5,5,6,6,6,5,6,9,9,9,10,10,10,12,13,11]
 CARDS_MIN_VALUE = 3
 CARDS_MAX_VALUE = 17
 
@@ -26,23 +26,21 @@ def sortFunc_1(t):
 
 def sample(cards,count):
 	total = len(cards)
-	if total < count:
-		return
-	temp = []
-	# temp = TEST_CARDS.copy()
+	temp = TEST_CARDS.copy()
+	cards.clear()
+
 	# count -= len(temp)
 	# total -= len(temp)
 	# for x in temp:
 	# 	cards.remove(x)
-	# TEST_CARDS.clear()
 
 
-	while count > 0:
-		index = random.randint(0,total-1)
-		card = cards.pop(index)
-		temp.append(card)
-		count -= 1
-		total -= 1
+	# while count > 0:
+	# 	index = random.randint(0,total-1)
+	# 	card = cards.pop(index)
+	# 	temp.append(card)
+	# 	count -= 1
+	# 	total -= 1
 	return cards,temp
 
 
@@ -91,6 +89,8 @@ def try_get_pattern(card,cards_flat):
 			return [16,17]
 		return [card]
 	got_count = cards_flat.get(card) or 0
+	if got_count >= 4:
+		return 
 	discards = [card] * got_count
 	if got_count == 1 :
 		if card <= 11:
