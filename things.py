@@ -77,6 +77,7 @@ class Room(object):
 		player.ready = True
 		for _,pl in self._players.items():
 			msg = "%s enter room %s at pos %s points %s"%(player.nickname,self._id,player.room_pos,player.points)
+			msg = color_html(msg,Color.blue)
 			pl.sendmessage(s2c.message,0,msg)
 
 	def remove_player(self,player):
@@ -84,6 +85,7 @@ class Room(object):
 		del self._players_pos[player.room_pos]
 		for _,pl in self._players.items():
 			msg = "%s leave room %s"%(player.nickname,self._id)
+			msg = color_html(msg,Color.blue)
 			pl.sendmessage(s2c.message,0,msg)
 
 		print("remove_player",player.room_pos)
@@ -119,6 +121,7 @@ class Room(object):
 				player.askquestion(3)
 			else:
 				msg = "waiting for %s in landlord race"%(player.nickname)
+				msg = color_html(msg,Color.blue)
 				pl.sendmessage(s2c.message,0,msg)
 
 		
@@ -226,13 +229,13 @@ class Room(object):
 								player.show_last_discards()
 								player.showcards(try_discard_words,s2c.handle)
 						else:
-							player.showcards("waiting for %s to discard ..."%(player.nickname))
+							player.showcards(color_html("waiting for %s to discard ...",Color.blue)%(player.nickname))
 					else:
 						if player.room_pos ==  player.room_pos:
 							player.showcards("your cards:")
 							player.askquestion(3)
 						else:
-							player.showcards("waiting for %s in landlord race"%(player.nickname))
+							player.showcards(color_html("waiting for %s in landlord race",Color.blue)%(player.nickname))
 
 		else:
 			self.check_players()
@@ -270,7 +273,7 @@ class Room(object):
 				else:
 					pl.showcards(try_discard_words,s2c.handle)
 			else:
-				pl.showcards("waiting for %s to discard ..."%(player.nickname))
+				pl.showcards(color_html("waiting for %s to discard ..."%(player.nickname),Color.blue))
 	
 	def is_new_chain(self):
 		return self._last_discard_pos < 0 or self._last_discard_pos == self._cur_pos
@@ -291,12 +294,12 @@ class Room(object):
 				if not valid:
 					print("error fit ",rule.rule_type,rule.value,self._last_rule.rule_type,self._last_rule.value)
 			else:
-				player.showcards("can't do that,try again!",s2c.handle)
+				player.showcards(color_html("rule not fit,try again!",Color.red),s2c.handle)
 				return
 		if valid :
 			self.discards(player,rule)
 		else:
-			player.showcards("too small, try again!",s2c.handle)
+			player.showcards(color_html("too small, try again!",Color.red),s2c.handle)
 
 	def discards(self,player,rule):
 		self._last_rule = rule
@@ -461,6 +464,7 @@ class Player(object):
 				got_count = self._cards_flat.get(card) or 0
 				if count > got_count:
 					return False
+
 		return True
 
 	def sendmessage(self,e_s2c,ret,data):
@@ -477,7 +481,7 @@ class Player(object):
 		if self.cards_list == None:
 			return
 		msg = msg or ''
-		msg = "%s\n%s"%(msg,cmg.tostr(self.cards_list))
+		msg = "%s\n%s"%(msg,color_html(cmg.tostr(self.cards_list),Color.white))
 		if e_s2c == None :
 			self.sendmessage(s2c.message,0,msg)
 		else:
@@ -530,23 +534,36 @@ class Player(object):
 			return
 
 		discards = []
+		b_count = self._cards_flat.get(16) or 0 
+		b_count += (self._cards_flat.get(17) or 0) 
 		for word in data:
 			card = cmg.str2card(word)
 			if card != None:
-				discards.append(card)
+				if card > 15 and b_count > 0:
+					count = self._cards_flat.get(card) or 0 
+					if count <= 0:
+						b_count -= 1
+						if card == 16:
+							discards.append(17)
+						else:
+							discards.append(16)
 
-		valid = cmg.validate(discards)
-		rule = None
+				else: 
+					discards.append(card)
+
+		# valid = cmg.validate(discards)
+		rule = Rule(discards,True)
+		valid = rule.rule_type != None
 		if valid:
-			rule = Rule(discards,True)
-			valid = rule.rule_type != None
-			if valid:
-				valid = self.validate(rule)
-
-		if valid :
-			room.try_discards(self,rule)
+			valid = self.validate(rule)
+			if valid :
+				room.try_discards(self,rule)
+			else:
+				self.showcards(color_html("not exsit cards,try again!",Color.red),s2c.handle)	
 		else:
-			self.showcards("wrong cards,try again!",s2c.handle)	
+			self.showcards(color_html("forbidden,try again!",Color.red),s2c.handle)	
+			
+
 
 	def save_to_db(self):
 		common.save_player_info(self)

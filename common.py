@@ -18,14 +18,25 @@ class s2c(Enum):
     message = 100
     chat = 200
 
+class Color:
+	red ="FF0000"
+	greed ="00FF00"
+	white ="FFFFFF"
+	blue ="6464FF"
+
 messageQueue = Queue()
 loop = asyncio.get_event_loop()
 
 
-discard_words = "your turn to discard"
-try_discard_words = "your turn to discard,or pass(0)"
+discard_words = "<font color='#6464FF'>your turn to discard</font>"
+try_discard_words = "<font color='#6464FF'>your turn to discard,or pass(0)</font>"
 
 questions = pd.read_csv('questions.csv',index_col =0)
+
+
+
+def color_html(s,c):
+    return f'<font color="#{c}">{s}</font>'
 
 def toint(answer):
 	try:
