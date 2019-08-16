@@ -49,14 +49,18 @@ def toint(answer):
 
 def on_room_choose(player,questid,answer):
 	answer = toint(answer)
-	if answer == 1 :
-		return player.quick_start()
-	elif answer == 2 :
-		return player.askquestion(5)
-	elif answer == 3 :
-		return rmg.create_room(player)
-	msg = "wrong answer,please try again!"
-	return player.askquestion_with_msg(msg,questid)
+	msg = None
+	if rmg.check_room_conditions(player) :
+		if answer == 1 :
+			return player.quick_start()
+		elif answer == 2 :
+			return player.askquestion(5)
+		elif answer == 3 :
+			return rmg.create_room(player)
+		else:
+			msg = "wrong answer,please try again!"
+			return player.askquestion_with_msg(msg,questid)
+
 
 def on_room_waiting(player,questid,answer):
 	answer = toint(answer)
@@ -167,12 +171,12 @@ def get_playerid_in_db():
 	print("last_insert_id",col)
 
 def create_player_info(player):
-	sql = f"insert into players values('{player.id}','{player.username}','{player.secretid}','{player.points}');"
+	sql = f"insert into players values('{player.id}','{player.username}','{player.secretid}','{player.points}','{player.freepoints}');"
 	cursor.execute(sql)
 	mysql_conn.commit()
 
 def save_player_info(player):
-	sql = f"update players set points = '{pl.points}' where id = '{player.id}';"
+	sql = f"update players set points = '{pl.points}' , freepoints = '{pl.freepoints}' where id = '{player.id}';"
 	cursor.execute(sql)
 	mysql_conn.commit()
 

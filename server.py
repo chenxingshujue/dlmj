@@ -9,6 +9,7 @@ from things import Player
 from hashlib import md5
 from common import *
 import logging
+import time
 # PORT = 80
 
 # Handler = http.server.SimpleHTTPRequestHandler
@@ -58,11 +59,12 @@ def login(websocket,cmd):
 	secretid = cmd.get("secretid") or 0
 
 	playerid = None;
-
+	points = 0
+	freepoints = 0
 	ret = 0
 	col = get_player_info(username)
 	if col != None:
-		playerid,_,saved_secretid,points = col
+		playerid,_,saved_secretid,points,freepoints = col
 		if saved_secretid != secretid :
 			ret = 2
 		else :
@@ -84,7 +86,7 @@ def login(websocket,cmd):
 		if playerid != None:
 			player = clients.get(playerid)
 		if player == None:	 #new login
-			player = create_player(secretid,username,playerid)
+			player = create_player(secretid,username,playerid,points,freepoints)
 			player.websocket = websocket
 			clients[player.id] = player
 			websockets_to_id[websocket] = player.id
@@ -118,16 +120,21 @@ def login(websocket,cmd):
 
 
 
-def create_player(secretid,username,playerid):
-	points = 1000
+def create_player(secretid,username,playerid,points,freepoints):
 	player = Player(playerid)
 	player.add_points(points)
 	player.secretid = secretid
 	player.username = username
+	player.freepoints = freepoints
 	player.online = 1
 
+	now = int(time.time())
+	if points < 600 and now - freepoints > 12 * 3600:
+		player.add_points(1000)
+		player.freepoints = int(time.time())
+		
+
 	if playerid == None:
-		player.add_points(points)
 		create_player_info(player)
 
 	return player

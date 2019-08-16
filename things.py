@@ -13,6 +13,7 @@ _CARDS_COUNT_ON_START = 17
 class Room(object):
 	"""docstring for Room"""
 	_max_players_count_ = 3
+	_enter_points_ = 100
 	_global_id_  = 0
 	# def __new__(cls):
 	# 	print("__new__", cls == Room)
@@ -37,7 +38,6 @@ class Room(object):
 		self._last_discard_pos = -1
 		self._round = 0
 		self._multiple = 1
-		self.enter_points = 100
 		self.base_points = 50
 		self._status = 0
 		self.passwords = None
@@ -63,6 +63,9 @@ class Room(object):
 	@property
 	def landlord_pos(self):
 		return self._landlord_pos
+
+	def landlord(self):
+		return self._players_pos[self._landlord_pos]
 	
 
 	def add_player(self,player):
@@ -111,7 +114,7 @@ class Room(object):
 		self._status = 1
 		self.shuffle_cards()
 		for _,pl in self._players.items():
-			pl.add_points(-self.enter_points)
+			pl.add_points(-Room._enter_points_)
 			msg = "game start you got following cards:\n%s"%(cmg.tostr(pl.cards_list))
 			pl.sendmessage(s2c.message,0,msg)
 		self.roll_landlord(False)
@@ -362,6 +365,7 @@ class Player(object):
 		self._cards_list = None
 		self._points = 0
 		self.ready = True
+		self.freepoints = 0
 
 		
 	@property
@@ -597,6 +601,7 @@ class Robot(Player):
 	def __init__(self,_id):
 		super(Robot, self).__init__(_id)
 		self._username = randname.gen_one_gender_word()
+		self._points = random.randint(1000,2000)
 
 	def save_to_db(self):
 		print("save robot")
@@ -690,9 +695,9 @@ class Robot(Player):
 	def get_rule_nearly(self,last_rule):
 		if self._cards_list == None:
 			return
+		room = rmg.get(self.roomid)
 		rule = None
 		if last_rule == None:
-
 			index = len(self._cards_list)-1
 			card = 0
 			while index >= 0:
@@ -701,14 +706,29 @@ class Robot(Player):
 				discards = cmg.try_get_pattern(card,self._cards_flat)
 				if discards != None:
 					rule = Rule(discards,True)
-					# if self.left_to_landlord():
-					# 	if rule.rule_type == pattern.single：
-					# 		if card > 10:
-					# 			break
-					# 	else:
-					# 		break
-					# else:
-					break
+					if self.left_to_landlord():
+						if rule.rule_type == pattern.single：
+							if room.landlord().get_counts() == 1:
+								if card > 14:
+									break
+							if card > 10:
+								break
+						else:
+							if rule.count != room.landlord().get_counts() or rule.count == self.get_counts():
+								break
+					else:
+						break
+			if None == rule:
+				index = len(self._cards_list)-1
+				card = 0
+				while index >= 0:
+					card = self._cards_list[index]
+					index -= 1
+					discards = cmg.try_get_pattern(card,self._cards_flat)
+					if discards != None:
+						rule = Rule(discards,True)
+						break
+
 			if None == rule :
 				card = self._cards_list[len(self._cards_list)-1]
 				got_count = self._cards_flat.get(card) or 0

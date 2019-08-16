@@ -66,9 +66,8 @@ def add_player(room,player):
 
 
 def check_room_conditions(player):
-	room = get(player.roomid)
-	if player.points < room.enter_points:
-		player.sendmessage(s2c.message,0,"not enough points!")
+	if player.points < Room._enter_points_:
+		player.sendmessage(s2c.message,0,"not enough points,watch ads to get points!")
 		return False
 	return True
 
