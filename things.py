@@ -7,6 +7,7 @@ import cardsmanager as cmg
 from cardsmanager import Rule
 from cardsmanager import pattern
 import random
+import randname
 correct_answer_key = "a0"
 _CARDS_COUNT_ON_START = 17
 class Room(object):
@@ -491,10 +492,12 @@ class Player(object):
  		room = rmg.get(self.roomid)
  		if room != None and room.last_rule != None:
  			msg = "%s discard %s"%(room.last_discard_player.nickname,cmg.tostr(room.last_rule.cards))
- 			if room.last_discard_player.get_counts() < 4:
+ 			if room.last_discard_player.is_warnning():
  				msg = "%s (left:%s)"%(msg,room.last_discard_player.get_counts())
  			self.sendmessage(s2c.message,0,msg)
 
+	def is_warnning(self):
+		return  self.get_counts() < 4
 
 	def askquestion_with_msg(self,msg,questid,*params):
 		print("askquestion_with_msg",questid,self.questid,params)
@@ -587,7 +590,9 @@ class Player(object):
 		return len(self.cards_list)
 
 class Robot(Player):
-
+	def __init__(self,_id):
+		super(Robot, self).__init__(_id)
+		self._username = randname.gen_one_gender_word()
 
 	def save_to_db(self):
 		print("save robot")
@@ -640,6 +645,7 @@ class Robot(Player):
 						return True,last_rule
 					else:
 						return False,last_rule
+
 			elif self.right_to_landlord():
 				if room.last_discard_player != self:
 					if len(self._cards_list) -last_rule.count <= 2 :
@@ -687,11 +693,18 @@ class Robot(Player):
 			card = 0
 			while index >= 0:
 				card = self._cards_list[index]
+				index -= 1
 				discards = cmg.try_get_pattern(card,self._cards_flat)
 				if discards != None:
 					rule = Rule(discards,True)
+					# if self.left_to_landlord():
+					# 	if rule.rule_type == pattern.single：
+					# 		if card > 10:
+					# 			break
+					# 	else:
+					# 		break
+					# else:
 					break
-				index -= 1
 			if None == rule :
 				card = self._cards_list[len(self._cards_list)-1]
 				got_count = self._cards_flat.get(card) or 0
