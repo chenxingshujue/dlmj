@@ -84,7 +84,14 @@ def on_game_continue(player,questid,answer):
 		player.ready = True
 		room =rmg.get(player.roomid)
 		if rmg.check_room_conditions(player) :
-			room.start_game()
+			if not room.isfull():
+				room.check_players()
+			else:
+				room.start_game()
+		else:
+			player.leave_room()
+			player.askquestion(1)
+			
 
 def on_room_join(player,questid,answer):
 	numbers = toint(answer)
