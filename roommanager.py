@@ -1,7 +1,7 @@
 from things import Room
 from things import Player
 from things import Robot
-import common
+from common import *
 from hashlib import md5
 import asyncio
 _rooms = {}

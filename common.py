@@ -23,6 +23,7 @@ class Color:
 	greed ="00FF00"
 	white ="FFFFFF"
 	blue ="6464FF"
+	orange ="FFA500"
 
 messageQueue = Queue()
 loop = asyncio.get_event_loop()

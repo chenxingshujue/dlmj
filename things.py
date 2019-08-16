@@ -491,7 +491,11 @@ class Player(object):
 	def show_last_discards(self):
  		room = rmg.get(self.roomid)
  		if room != None and room.last_rule != None:
- 			msg = "%s discard %s"%(room.last_discard_player.nickname,cmg.tostr(room.last_rule.cards))
+ 			if room.last_rule == pattern.bomb :
+	 			msg = "%s discard a bomb ! %s "%(room.last_discard_player.nickname,cmg.tostr(room.last_rule.cards))
+	 			msg = color_html(msg,Color.orange)
+ 			else:
+	 			msg = "%s discard %s"%(room.last_discard_player.nickname,cmg.tostr(room.last_rule.cards))
  			if room.last_discard_player.is_warnning():
  				msg = "%s (left:%s)"%(msg,room.last_discard_player.get_counts())
  			self.sendmessage(s2c.message,0,msg)
