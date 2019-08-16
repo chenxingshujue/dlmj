@@ -707,7 +707,7 @@ class Robot(Player):
 				if discards != None:
 					rule = Rule(discards,True)
 					if self.left_to_landlord():
-						if rule.rule_type == pattern.single：
+						if rule.rule_type == pattern.single:
 							if room.landlord().get_counts() == 1:
 								if card > 14:
 									break
