@@ -185,6 +185,21 @@ async def login_robot():
 		rmg.login_robot()
 
 
+async def save_db():
+	playerids = None
+	while True:
+		await asyncio.sleep(300)
+		if playerids == None:
+			playerids = clients.keys()
+		for playerid in playerids:
+			player = clients.get(playerid)
+			if player != None:
+				player.save_to_db()
+
+		
+
+
+
 # t = Thread(target=start_loop, args=(new_loop,))
 # t.start()
 # print('TIME: {}'.format(time.time() - start))
@@ -199,7 +214,8 @@ start_server = websockets.serve(card_server,"0.0.0.0",8765)
 tasks = [
 	start_server,
 	login_robot(),
-	sendmessage()
+	sendmessage(),
+	save_db()
 ]
 loop.run_until_complete(asyncio.wait(tasks))
 # loop.run_until_complete(start_server)
