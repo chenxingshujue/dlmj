@@ -2,10 +2,9 @@ import asyncio
 import common
 import json
 from common import *
-import roommanager as rmg
+from cardsmanager import *
 import cardsmanager as cmg
-from cardsmanager import Rule
-from cardsmanager import pattern
+import roommanager as rmg
 import random
 import randname
 correct_answer_key = "a0"
@@ -342,6 +341,7 @@ class Room(object):
 		self._last_discard_pos = -1
 		self._round = 0
 		self._status = 0
+		self._multiple = 1
 
 
 
@@ -547,19 +547,19 @@ class Player(object):
 			return
 
 		discards = []
-		b_count = self._cards_flat.get(16) or 0 
-		b_count += (self._cards_flat.get(17) or 0) 
+		b_count = self._cards_flat.get(JOKER_S) or 0 
+		b_count += (self._cards_flat.get(JOKER_B) or 0) 
 		for word in data:
 			card = cmg.str2card(word)
 			if card != None:
-				if card > 15 and b_count > 0:
+				if card > Two and b_count > 0:
 					count = self._cards_flat.get(card) or 0 
 					if count <= 0:
 						b_count -= 1
-						if card == 16:
-							discards.append(17)
+						if card == JOKER_S:
+							discards.append(JOKER_b)
 						else:
-							discards.append(16)
+							discards.append(JOKER_S)
 					else:
 						discards.append(card)
 
@@ -760,8 +760,8 @@ class Robot(Player):
 			got_count = self._cards_flat.get(card) or 0
 			if got_count >= 4:
 				return [card] * got_count
-			elif card == 16 and self._cards_flat.get(17) != None:
-				return [16,17]
+			elif card == JOKER_S and self._cards_flat.get(JOKER_B) != None:
+				return [JOKER_S,JOKER_B]
 			index -= 1
 
 
@@ -773,8 +773,8 @@ class Robot(Player):
 		if last_rule.rule_type == pattern.bomb:
 			if got_count >= 4:
 				return [card] * got_count
-			elif card == 16 and self._cards_flat.get(17) != None:
-				return [16,17]
+			elif card == JOKER_S and self._cards_flat.get(JOKER_B) != None:
+				return [JOKER_S,JOKER_B]
 
 		if last_rule.rule_type == pattern.single:
 			return [card]
@@ -925,7 +925,7 @@ class Robot(Player):
 		elif last_rule.rule_type == pattern.bomb:
 			if got_count >= 4:
 				return [card] * got_count			
-			elif card == 16 and self._cards_flat.get(17) != None:
-				return [16,17]
+			elif card == JOKER_S and self._cards_flat.get(JOKER_B) != None:
+				return [JOKER_S,JOKER_B]
 
 

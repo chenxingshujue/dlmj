@@ -1,22 +1,23 @@
 import random
-CARDS = [3,4,5,6,7,8,9,10,11,12,13,14,15,
-		 3,4,5,6,7,8,9,10,11,12,13,14,15,
-		 3,4,5,6,7,8,9,10,11,12,13,14,15,
-		 3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
+Two = 16
+JOKER_S = 17
+JOKER_B = 18
 
-TEST_CARDS = [5,5,5,6,6,6,5,6,9,9,9,10,10,10,12,13,11]
+CARDS = [3,4,5,6,7,8,9,10,11,12,13,14,Two,
+		 3,4,5,6,7,8,9,10,11,12,13,14,Two,
+		 3,4,5,6,7,8,9,10,11,12,13,14,Two,
+		 3,4,5,6,7,8,9,10,11,12,13,14,Two,JOKER_S,JOKER_B]
+
+TEST_CARDS = [5,5,5,6,3,4,5,6,7,8,9,10,11,12,13,14,Two,JOKER_S,JOKER_B]
 CARDS_MIN_VALUE = 3
-CARDS_MAX_VALUE = 17
+CARDS_MAX_VALUE = JOKER_B
 
-JOKER_R = 17
-JOKER_r = 16
-
-CARDS_TO_NAME = {10:"T",11:"J",12:"Q",13:"K",14:"A",15:"2",16:"b",17:"B"}
+CARDS_TO_NAME = {10:"T",11:"J",12:"Q",13:"K",14:"A",Two:"2",JOKER_S:"b",JOKER_B:"B"}
 NAME_TO_CARDS = {"t":10,"j":11,"q":12,"k":13,"a":14}
 for k,v in CARDS_TO_NAME.items():
 	NAME_TO_CARDS[v]=k
 
-STRAIGHT_SPECIALS = {15:True,16:True,17:True}
+STRAIGHT_SPECIALS = {Two:True,JOKER_S:True,JOKER_B:True}
 
 def sortFunc_0(t):
 	return t[0]
@@ -27,19 +28,16 @@ def sortFunc_1(t):
 def sample(cards,count):
 	total = len(cards)
 
-	# temp = TEST_CARDS.copy()
-	# cards.clear()
-	# count -= len(temp)
-	# total -= len(temp)
-	# for x in temp:
-	# 	cards.remove(x)
-	temp = []
-	while count > 0:
-		index = random.randint(0,total-1)
-		card = cards.pop(index)
-		temp.append(card)
-		count -= 1
-		total -= 1
+	temp = TEST_CARDS.copy()
+	cards.clear()
+	
+	# temp = []
+	# while count > 0:
+	# 	index = random.randint(0,total-1)
+	# 	card = cards.pop(index)
+	# 	temp.append(card)
+	# 	count -= 1
+	# 	total -= 1
 	return cards,temp
 
 
@@ -83,9 +81,9 @@ def flat_cards(cards):
 	return t
 
 def try_get_pattern(card,cards_flat):
-	if card > 15:
-		if cards_flat.get(16) and cards_flat.get(17):
-			return [16,17]
+	if card > Two:
+		if cards_flat.get(JOKER_S) and cards_flat.get(JOKER_B):
+			return [JOKER_S,JOKER_B]
 		return [card]
 	got_count = cards_flat.get(card) or 0
 	if got_count >= 4:
@@ -95,7 +93,7 @@ def try_get_pattern(card,cards_flat):
 		if card <= 11:
 			next_card = card+1
 			next_card_count = cards_flat.get(next_card) or 0
-			while next_card_count > 0 and next_card_count < 4 and next_card < 15:
+			while next_card_count > 0 and next_card_count < 4 and next_card < Two:
 				next_card += 1
 				next_card_count = cards_flat.get(next_card) or 0
 			if next_card - card >= 5:
@@ -129,7 +127,7 @@ def try_get_pattern(card,cards_flat):
 		if card <= 10:
 			next_card = card + 1
 			next_card_count = cards_flat.get(next_card) or 0
-			while (next_card_count > 3) or next_card > 15 :
+			while (next_card_count > 3) or next_card > Two :
 				next_card += 1
 				next_card_count = cards_flat.get(next_card) or 0
 			if next_card_count <= 2:
@@ -210,7 +208,7 @@ class Rule(object):
 		elif self.count == 2:
 			if self.flatcount == 1:
 				return pattern.double
-			elif self.cards[0] == JOKER_r and self.cards[1] == JOKER_R:
+			elif self.cards[0] == JOKER_S and self.cards[1] == JOKER_B:
 				return pattern.bomb
 		elif self.count == 3:
 			if self.flatcount == 1:
