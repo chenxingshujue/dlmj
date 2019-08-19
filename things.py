@@ -556,7 +556,7 @@ class Player(object):
 					if count <= 0:
 						b_count -= 1
 						if card == JOKER_S:
-							discards.append(JOKER_b)
+							discards.append(JOKER_B)
 						else:
 							discards.append(JOKER_S)
 					else:
