@@ -197,6 +197,7 @@ async def save_db():
 	playerids = None
 	while True:
 		await asyncio.sleep(300)
+		get_max_player_id()
 		if playerids == None:
 			playerids = clients.keys()
 		for playerid in playerids:
