@@ -201,6 +201,7 @@ async def save_db():
 		for playerid in playerids:
 			player = clients.get(playerid)
 			if player != None:
+				await asyncio.sleep(1)
 				player.save_to_db()
 
 		
