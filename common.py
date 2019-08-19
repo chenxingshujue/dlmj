@@ -157,10 +157,11 @@ max_player_id = 0
 def get_max_player_id():
 	get_max_id = "select max(id) from players;"
 	cursor.execute(get_max_id)
+	global max_player_id
 	max_player_id = cursor.fetchone()[0] or 0
-	print("max_player_id",max_player_id)
 	
 get_max_player_id()
+print("max_player_id",max_player_id)
 
 def get_player_info(username):
 	sql = f"select * from players where username ='{username}';"
