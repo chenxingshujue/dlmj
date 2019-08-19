@@ -174,7 +174,7 @@ class Room(object):
 				player = self._players_pos[self._landlord_pos]
 				self.assign_left_cards()
 				for _,pl in self._players.items():
-					msg = "%s become the landlord!"%(player.nickname)
+					msg = "%s become the landlord! extra cards(%s)"%(player.nickname,cmg.tostr(self._cards))
 					pl.sendmessage(s2c.message,0,msg)
 
 				self.roll_discard(self._landlord_pos)
@@ -258,7 +258,6 @@ class Room(object):
 	def assign_left_cards(self):
 		player = self._players_pos[self._landlord_pos]
 		player.add_cards(self._cards)
-		self.cards = []
 
 	def roll_discard(self,pos=None):
 		self._status = 2

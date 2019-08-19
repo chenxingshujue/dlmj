@@ -177,12 +177,15 @@ def get_playerid_in_db():
 	print("last_insert_id",col)
 
 def create_player_info(player):
-	sql = f"insert into players values('{player.id}','{player.username}','{player.secretid}','{player.points}','{player.freepoints}');"
-	cursor.execute(sql)
-	mysql_conn.commit()
+	try:
+		sql = f"insert into players values('{player.id}','{player.username}','{player.secretid}','{player.points}','{player.freepoints}');"
+		cursor.execute(sql)
+		mysql_conn.commit()
+	except Exception as e:
+		print(e)
 
 def save_player_info(player):
-	sql = f"update players set points = '{pl.points}' , freepoints = '{pl.freepoints}' where id = '{player.id}';"
+	sql = f"update players set points = '{player.points}' , freepoints = '{player.freepoints}' where id = '{player.id}';"
 	cursor.execute(sql)
 	mysql_conn.commit()
 

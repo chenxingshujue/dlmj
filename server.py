@@ -150,6 +150,7 @@ def logout(websocket):
 		player = clients.get(playerid)
 		if player != None:
 			player.online = 0
+			player.save_to_db()
 			room = rmg.get(player.roomid)
 			if room != None:
 				room.on_player_disconnect(player)
