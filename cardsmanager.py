@@ -28,16 +28,16 @@ def sortFunc_1(t):
 def sample(cards,count):
 	total = len(cards)
 
-	temp = TEST_CARDS.copy()
-	cards.clear()
+	# temp = TEST_CARDS.copy()
+	# cards.clear()
 
-	# temp = []
-	# while count > 0:
-	# 	index = random.randint(0,total-1)
-	# 	card = cards.pop(index)
-	# 	temp.append(card)
-	# 	count -= 1
-	# 	total -= 1
+	temp = []
+	while count > 0:
+		index = random.randint(0,total-1)
+		card = cards.pop(index)
+		temp.append(card)
+		count -= 1
+		total -= 1
 	return cards,temp
 
 
