@@ -8,7 +8,7 @@ CARDS = [3,4,5,6,7,8,9,10,11,12,13,14,Two,
 		 3,4,5,6,7,8,9,10,11,12,13,14,Two,
 		 3,4,5,6,7,8,9,10,11,12,13,14,Two,JOKER_S,JOKER_B]
 
-TEST_CARDS = [5,5,5,6,3,4,5,6,7,8,9,10,11,12,13,14,Two,JOKER_S,JOKER_B]
+TEST_CARDS = [10,10,10,10,11,4,5,6,7,8,9,10,11,12,13,14,Two,JOKER_S,JOKER_B]
 CARDS_MIN_VALUE = 3
 CARDS_MAX_VALUE = JOKER_B
 
@@ -28,16 +28,16 @@ def sortFunc_1(t):
 def sample(cards,count):
 	total = len(cards)
 
-	# temp = TEST_CARDS.copy()
-	# cards.clear()
-	
-	temp = []
-	while count > 0:
-		index = random.randint(0,total-1)
-		card = cards.pop(index)
-		temp.append(card)
-		count -= 1
-		total -= 1
+	temp = TEST_CARDS.copy()
+	cards.clear()
+
+	# temp = []
+	# while count > 0:
+	# 	index = random.randint(0,total-1)
+	# 	card = cards.pop(index)
+	# 	temp.append(card)
+	# 	count -= 1
+	# 	total -= 1
 	return cards,temp
 
 
@@ -192,7 +192,21 @@ class Rule(object):
 	def fit(self,other):
 		if self.rule_type == pattern.bomb :
 			return True
-		return self.rule_type == other.rule_type
+		if self.rule_type != other.rule_type :
+			return False
+
+		elif self.rule_type == pattern.straight :
+			return self.count == other.count
+		elif self.rule_type == pattern.straight_pairs :
+			return self.count == other.count
+		elif self.rule_type == pattern.plane :
+			return self.count == other.count
+		elif self.rule_type == pattern.plane_with_pairs :
+			return self.count == other.count
+		elif self.rule_type == pattern.plane_with_single :
+			return self.count == other.count
+			
+		return True
 
 	def parse_rule_type(self):
 		if self.parse_straight():
