@@ -82,8 +82,10 @@ def remove_player(player):
 	room = get(player.roomid)
 	if room != None:
 		room.remove_player(player)
-		if isinstance(player,Robot):
-			del _robots[player.id] 
+		if player.isrobot :
+			del _robots[player.id]
+		elif room.is_all_robot():
+			room.clear_all_players()
 
 		if room.isempty():
 			del _rooms[room.id]

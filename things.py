@@ -40,6 +40,7 @@ class Room(object):
 		self.base_points = 50
 		self._status = 0
 		self.passwords = None
+		self.isrobot = False
 
 	@property
 	def id(self):
@@ -246,6 +247,19 @@ class Room(object):
 	def on_player_chat(self,player,msg):
 		for _,pl in self._players.items():
 			pl.sendmessage(s2c.chat,0,"%s say: %s"%(player.nickname,msg))
+
+
+
+	def is_all_robot(self):
+		for _,pl in self._players.items():
+			if not pl.isrobot :
+				return False
+		return True
+
+	def clear_all_players(self):
+		for _,pl in self._players.items():
+			pl.leave_room()
+
 
 
 
@@ -596,11 +610,15 @@ class Player(object):
 	def get_counts(self):
 		return len(self.cards_list)
 
+
+
+
 class Robot(Player):
 	def __init__(self,_id):
 		super(Robot, self).__init__(_id)
 		self._username = randname.gen_one_gender_word()
 		self._points = random.randint(1000,2000)
+		self.isrobot = True
 
 	def save_to_db(self):
 		print("save robot")
