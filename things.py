@@ -379,6 +379,7 @@ class Player(object):
 		self._points = 0
 		self.ready = True
 		self.freepoints = 0
+		self.isrobot = False
 
 		
 	@property
